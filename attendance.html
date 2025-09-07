@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Attendance</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; }
+    body { max-width: 680px; margin: 40px auto; padding: 0 16px; }
+    h1 { font-size: 1.4rem; margin-bottom: 1rem; }
+    .list { display: grid; grid-template-columns: 1fr; gap: .5rem; margin: 1rem 0; }
+    .student { display: flex; align-items: center; gap: .6rem; padding: .6rem .8rem; border: 1px solid #ddd; border-radius: 8px; }
+    .actions { margin-top: 1rem; display: flex; gap: .6rem; align-items: center; }
+    button { padding: .7rem 1.1rem; border: 0; border-radius: 10px; cursor: pointer; }
+    button.primary { background: black; color: white; }
+    .status { min-height: 1.2rem; font-size: .95rem; }
+    .muted { color: #666; }
+  </style>
+</head>
+<body>
+  <h1>Attendance</h1>
+
+  <div id="date" class="muted"></div>
+
+  <div id="list" class="list" aria-live="polite">
+    <div class="muted">Loading students…</div>
+  </div>
+
+  <div class="actions">
+    <button id="submit" class="primary">Submit</button>
+    <span id="status" class="status"></span>
+  </div>
+
+  <script>
+    const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbzVG8FOpcv9G6ZR8_CtaRn5Vq69OLqtOPJTS3cZOU5lFYGC884TdHi_ORIDC0gqh7gv/exec'; // <-- paste from Apps Script deployment
+    const listEl   = document.getElementById('list');
+    const statusEl = document.getElementById('status');
+    const dateEl   = document.getElementById('date');
+    const submitEl = document.getElementById('submit');
+
+    // Show today's date
+    dateEl.textContent = new Date().toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+
+    // Fetch student names from the backend
+    async function loadNames() {
+      try {
+        const res = await fetch(WEB_APP_URL, { method: 'GET' });
+        const data = await res.json();
+        if (!data.ok) throw new Error(data.error || 'Failed to load names');
+
+        renderList(data.names);
+      } catch (err) {
+        listEl.innerHTML = `<div class="muted">Error loading names: ${escapeHtml(String(err))}</div>`;
+      }
+    }
+
+    function renderList(names) {
+      if (!names?.length) {
+        listEl.innerHTML = `<div class="muted">No names found in the sheet.</div>`;
+        return;
+      }
+      listEl.innerHTML = '';
+      names.forEach(name => {
+        const id = 'id_' + Math.random().toString(36).slice(2);
+        const row = document.createElement('label');
+        row.className = 'student';
+        row.innerHTML = `
+          <input type="checkbox" data-name="${escapeHtml(name)}" />
+          <span>${escapeHtml(name)}</span>
+        `;
+        listEl.appendChild(row);
+      });
+    }
+
+    function selectedNames() {
+      return Array.from(listEl.querySelectorAll('input[type="checkbox"]:checked'))
+        .map(cb => cb.getAttribute('data-name'));
+    }
+
+    // Submit handler: send URL-encoded body to avoid CORS preflight
+    submitEl.addEventListener('click', async () => {
+      const names = selectedNames();
+      if (!names.length) {
+        status('Please check at least one student.', true);
+        return;
+      }
+      submitEl.disabled = true;
+      status('Submitting…');
+
+      const body = new URLSearchParams({ names: JSON.stringify(names) }).toString();
+
+      try {
+        const res = await fetch(WEB_APP_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body
+        });
+
+        // Apps Script returns JSON
+        const data = await res.json().catch(() => ({}));
+        if (!data.ok) throw new Error(data.error || 'Unknown error');
+
+        // Clear checks on success
+        listEl.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
+
+        const updated = (data.updated || []).join(', ');
+        const missing = (data.missing || []);
+        if (missing.length) {
+          status(`Saved. Updated: ${updated}. Not found: ${missing.join(', ')}.`, false);
+        } else {
+          status(`Saved. Updated: ${updated}.`, false);
+        }
+      } catch (err) {
+        status('Error: ' + String(err), true);
+      } finally {
+        submitEl.disabled = false;
+      }
+    });
+
+    function status(msg, isError = false) {
+      statusEl.textContent = msg;
+      statusEl.style.color = isError ? '#b00020' : 'inherit';
+    }
+
+    function escapeHtml(s) {
+      return s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    }
+
+    loadNames();
+  </script>
+</body>
+</html>
