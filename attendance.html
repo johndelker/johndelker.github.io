@@ -48,7 +48,7 @@
     main {
       width: 100%;
       max-width: 980px;
-      padding: 24px 16px 160px; /* bottom padding for scroll space */
+      padding: 24px 16px; /* no bottom padding; we'll use a spacer div instead */
     }
     h1 { font-size: 1.35rem; margin: 0 0 .5rem; }
     .muted { color: var(--muted); }
@@ -81,16 +81,17 @@
       justify-content: center;
       align-items: center;
       font-weight: 900;
-      font-size: 1.25rem;
+      font-size: 1.35rem;          /* larger */
       letter-spacing: .08em;
       text-transform: uppercase;
       color: var(--msu-contrast);
       background: var(--msu);
       border: 1px solid rgba(0,0,0,0.15);
       border-radius: 999px;
-      padding: .45rem .9rem;
+      padding: .55rem 1.1rem;      /* bigger bubble */
       margin: .2rem 0 .2rem;
       box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+      text-align: center;
     }
 
     label.student {
@@ -107,18 +108,30 @@
     label.student:hover { border-color: #3b82f6; background: var(--chip-hover); }
     input[type="checkbox"].student-box { width: 20px; height: 20px; margin: 0; accent-color: var(--accent); }
 
-    .spacer {
-      height: 200px; /* adjust as you like */
+    /* Actions area: full-width button that matches the columns width */
+    .actions {
+      margin-top: 12px;
     }
-
-    .actions { display: flex; align-items: center; gap: .8rem; margin-top: 12px; }
-    button {
-      padding: .75rem 1.2rem; border: 1px solid var(--border); border-radius: 10px;
-      background: var(--accent); color: white; font-weight: 600; cursor: pointer;
+    .actions button {
+      display: block;
+      width: 100%;
+      padding: 1.1rem 1.2rem;      /* larger hit area */
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: var(--accent);
+      color: white;
+      font-weight: 900;            /* bolder */
+      font-size: 1.15rem;          /* larger text */
+      letter-spacing: .06em;
+      text-transform: uppercase;   /* ALL CAPS */
+      cursor: pointer;
     }
-    button:disabled { opacity: .6; cursor: not-allowed; }
-    .status { min-height: 1.2rem; }
+    .actions button:disabled { opacity: .6; cursor: not-allowed; }
+    .status { display: block; margin-top: .6rem; min-height: 1.2rem; }
     .status.error { color: var(--danger); }
+
+    /* Guaranteed scroll space below the button */
+    .spacer { height: 220px; }     /* adjust as you like */
   </style>
 </head>
 <body class="dark"><!-- starts in dark mode -->
@@ -148,13 +161,14 @@
       <div class="card muted">Loading students…</div>
     </div>
 
+    <!-- Full-width Submit (same width as columns) -->
     <div class="actions">
-        <button id="submit">Submit</button>
-        <span id="status" class="status muted"></span>
-      </div>
-      
-      <!-- 👇 add this spacer -->
-      <div class="spacer"></div>
+      <button id="submit">Submit</button>
+      <span id="status" class="status muted"></span>
+    </div>
+
+    <!-- Spacer to ensure scroll past the button -->
+    <div class="spacer"></div>
   </main>
 
   <script>
