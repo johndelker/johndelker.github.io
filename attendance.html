@@ -107,6 +107,10 @@
     label.student:hover { border-color: #3b82f6; background: var(--chip-hover); }
     input[type="checkbox"].student-box { width: 20px; height: 20px; margin: 0; accent-color: var(--accent); }
 
+    .spacer {
+      height: 200px; /* adjust as you like */
+    }
+
     .actions { display: flex; align-items: center; gap: .8rem; margin-top: 12px; }
     button {
       padding: .75rem 1.2rem; border: 1px solid var(--border); border-radius: 10px;
@@ -145,9 +149,12 @@
     </div>
 
     <div class="actions">
-      <button id="submit">Submit</button>
-      <span id="status" class="status muted"></span>
-    </div>
+        <button id="submit">Submit</button>
+        <span id="status" class="status muted"></span>
+      </div>
+      
+      <!-- 👇 add this spacer -->
+      <div class="spacer"></div>
   </main>
 
   <script>
