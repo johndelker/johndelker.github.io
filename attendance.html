@@ -5,8 +5,23 @@
   <title>Attendance</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
-    :root {
-      color-scheme: dark;
+    /* Light theme defaults */
+    body {
+      --bg: #f6f8fa;
+      --panel: #ffffff;
+      --muted: #57606a;
+      --text: #24292f;
+      --border: #d0d7de;
+      --accent: #0969da;
+      --danger: #cf222e;
+      --chip: #f6f8fa;
+      --chip-hover: #f0f1f2;
+      --msu: #115740; /* Spartan Green */
+      --msu-contrast: #ffffff;
+    }
+
+    /* Dark theme overrides */
+    body.dark {
       --bg: #0d1117;
       --panel: #161b22;
       --muted: #8b949e;
@@ -16,11 +31,13 @@
       --danger: #ff7b72;
       --chip: #0e1520;
       --chip-hover: #0f1a28;
+      --msu: #115740;
+      --msu-contrast: #ffffff;
     }
+
     * { box-sizing: border-box; }
-    html, body { height: 100%; }
+    html, body { height: 100%; margin: 0; }
     body {
-      margin: 0;
       background: var(--bg);
       color: var(--text);
       font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
@@ -31,24 +48,16 @@
     main {
       width: 100%;
       max-width: 980px;
-      padding: 24px 16px 64px;
+      padding: 24px 16px 160px; /* bottom padding for scroll space */
     }
     h1 { font-size: 1.35rem; margin: 0 0 .5rem; }
     .muted { color: var(--muted); }
-    .card {
-      background: var(--panel);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 12px;
-    }
-    .header {
-      display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 8px;
-    }
+
+    .card { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 12px; }
+    .header { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 8px; }
 
     /* Options bar */
-    .options {
-      display: flex; flex-wrap: wrap; gap: 12px; margin: 12px 0 8px;
-    }
+    .options { display: flex; flex-wrap: wrap; gap: 12px; margin: 12px 0 8px; }
     .opt {
       display: inline-flex; align-items: center; gap: .55rem;
       padding: .5rem .7rem; border: 1px solid var(--border); border-radius: 10px; background: var(--panel);
@@ -56,39 +65,32 @@
     .opt input[type="checkbox"] { width: 18px; height: 18px; margin: 0; accent-color: var(--accent); }
 
     /* Columns container */
-    .columns {
-      display: grid;
-      grid-template-columns: 1fr;     /* 1 col mobile */
-      gap: 12px;
-      margin: 12px 0;
-    }
-    @media (min-width: 640px) {
-      .columns { grid-template-columns: 1fr 1fr; } /* 2 cols */
-    }
-    @media (min-width: 960px) {
-      .columns { grid-template-columns: 1fr 1fr 1fr; } /* 3 cols */
-    }
+    .columns { display: grid; grid-template-columns: 1fr; gap: 12px; margin: 12px 0; }
+    @media (min-width: 640px) { .columns { grid-template-columns: 1fr 1fr; } }
+    @media (min-width: 960px) { .columns { grid-template-columns: 1fr 1fr 1fr; } }
+
     .column {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      padding: 10px;
-      background: var(--panel);
-      border: 1px solid var(--border);
-      border-radius: 12px;
+      display: flex; flex-direction: column; gap: 10px; padding: 10px;
+      background: var(--panel); border: 1px solid var(--border); border-radius: 12px;
       min-height: 40px;
     }
 
-    /* Larger, bolder group headers */
+    /* Spartan-green letter bubble headers */
     .group-header {
+      display: flex;
+      justify-content: center;
+      align-items: center;
       font-weight: 900;
-      font-size: 1.1rem;
-      letter-spacing: .06em;
-      color: var(--text);
-      padding: .25rem .2rem .1rem 0;
-      margin: .2rem 0 .2rem;
-      border-bottom: 2px solid var(--border);
+      font-size: 1.25rem;
+      letter-spacing: .08em;
       text-transform: uppercase;
+      color: var(--msu-contrast);
+      background: var(--msu);
+      border: 1px solid rgba(0,0,0,0.15);
+      border-radius: 999px;
+      padding: .45rem .9rem;
+      margin: .2rem 0 .2rem;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.25);
     }
 
     label.student {
@@ -96,7 +98,6 @@
       align-items: center;
       gap: .7rem;
       padding: .8rem;
-      background: --chip;
       background: var(--chip);
       border: 1px solid var(--border);
       border-radius: 10px;
@@ -104,27 +105,19 @@
       transition: border-color .15s ease, background .15s ease;
     }
     label.student:hover { border-color: #3b82f6; background: var(--chip-hover); }
-    input[type="checkbox"].student-box {
-      width: 20px; height: 20px; margin: 0;
-      accent-color: var(--accent);
-    }
+    input[type="checkbox"].student-box { width: 20px; height: 20px; margin: 0; accent-color: var(--accent); }
 
     .actions { display: flex; align-items: center; gap: .8rem; margin-top: 12px; }
     button {
-      padding: .75rem 1.2rem;
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      background: #1f6feb;
-      color: white;
-      font-weight: 600;
-      cursor: pointer;
+      padding: .75rem 1.2rem; border: 1px solid var(--border); border-radius: 10px;
+      background: var(--accent); color: white; font-weight: 600; cursor: pointer;
     }
     button:disabled { opacity: .6; cursor: not-allowed; }
     .status { min-height: 1.2rem; }
     .status.error { color: var(--danger); }
   </style>
 </head>
-<body>
+<body class="dark"><!-- starts in dark mode -->
   <main>
     <div class="header">
       <h1>Attendance</h1>
@@ -141,6 +134,10 @@
         <input type="checkbox" id="optGroupByFirst" checked />
         <span>Group by first letter</span>
       </label>
+      <label class="opt">
+        <input type="checkbox" id="optDarkMode" checked />
+        <span>Dark mode</span>
+      </label>
     </div>
 
     <div id="columns" class="columns" aria-live="polite">
@@ -154,7 +151,7 @@
   </main>
 
   <script>
-    const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbyoAZHt0ZPPfkDMcrXQ1MFtRmHjN-OBD5zFQwULCinj5iADO6LrfLu2EqboieqBGvjX/exec'; // <-- paste Apps Script Web App URL
+    const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbyoAZHt0ZPPfkDMcrXQ1MFtRmHjN-OBD5zFQwULCinj5iADO6LrfLu2EqboieqBGvjX/exec';
 
     const columnsEl = document.getElementById('columns');
     const statusEl  = document.getElementById('status');
@@ -163,8 +160,36 @@
 
     const optSortByFirst  = document.getElementById('optSortByFirst');
     const optGroupByFirst = document.getElementById('optGroupByFirst');
+    const optDarkMode     = document.getElementById('optDarkMode');
 
     dateEl.textContent = new Date().toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+
+    // === Load saved options from localStorage ===
+    const savedOptions = JSON.parse(localStorage.getItem('attendanceOptions') || '{}');
+    if ('sortByFirst' in savedOptions) optSortByFirst.checked = savedOptions.sortByFirst;
+    if ('groupByFirst' in savedOptions) optGroupByFirst.checked = savedOptions.groupByFirst;
+    if ('darkMode' in savedOptions) {
+      optDarkMode.checked = savedOptions.darkMode;
+      document.body.classList.toggle('dark', optDarkMode.checked);
+    }
+
+    function saveOptions() {
+      const opts = {
+        sortByFirst: optSortByFirst.checked,
+        groupByFirst: optGroupByFirst.checked,
+        darkMode: optDarkMode.checked
+      };
+      localStorage.setItem('attendanceOptions', JSON.stringify(opts));
+    }
+
+    // Dark mode toggle
+    optDarkMode.addEventListener('change', () => {
+      document.body.classList.toggle('dark', optDarkMode.checked);
+      saveOptions();
+    });
+
+    optSortByFirst.addEventListener('change', () => { saveOptions(); render(); });
+    optGroupByFirst.addEventListener('change', () => { saveOptions(); render(); });
 
     // Data cache
     let originalNames = []; // raw names from Sheet (unchanged; used for POST)
@@ -184,9 +209,6 @@
       }
     }
 
-    // Rerender on option or layout changes
-    optSortByFirst.addEventListener('change', render);
-    optGroupByFirst.addEventListener('change', render);
     window.addEventListener('resize', debounce(render, 100));
 
     /* ============== Rendering logic ============== */
@@ -210,80 +232,81 @@
 
       items.sort((a, b) => a.sortKey.localeCompare(b.sortKey));
 
-      // Build columns content
-      const columnNodes = [];
+      if (!items.length) {
+        columnsEl.innerHTML = `<div class="card muted">No names found in the sheet.</div>`;
+        return;
+      }
 
       if (grouped) {
-        // Build whole groups
-        const groups = [];
-        let current = null;
-        for (const item of items) {
-          if (!current || current.letter !== item.groupKey) {
-            current = { letter: item.groupKey, items: [] };
-            groups.push(current);
-          }
-          current.items.push(item);
-        }
-
-        // Distribute groups across columns without splitting groups
-        const totalItems = items.length;
-        const targetPerCol = Math.ceil(totalItems / colCount);
-        const cols = Array.from({ length: colCount }, () => []);
-        let colIdx = 0, countInCol = 0;
-
-        for (let i = 0; i < groups.length; i++) {
-          const g = groups[i];
-          const remainingGroups = groups.length - i;
-          const remainingCols = colCount - colIdx;
-          // Ensure at least one group per remaining column
-          const mustBreak = (countInCol > 0) &&
-                            ((countInCol + g.items.length) > targetPerCol) &&
-                            (remainingGroups >= remainingCols);
-          if (mustBreak && colIdx < colCount - 1) {
-            colIdx++;
-            countInCol = 0;
-          }
-          cols[colIdx].push(g);
-          countInCol += g.items.length;
-        }
-
-        // Render columns
-        columnsEl.innerHTML = '';
-        for (let c = 0; c < colCount; c++) {
-          const col = document.createElement('div');
-          col.className = 'column';
-          const groupsInCol = cols[c];
-          if (groupsInCol.length === 0) {
-            columnsEl.appendChild(col);
-            continue;
-          }
-          for (const g of groupsInCol) {
-            const header = document.createElement('div');
-            header.className = 'group-header';
-            header.textContent = g.letter;
-            col.appendChild(header);
-            for (const item of g.items) {
-              col.appendChild(studentRow(item));
-            }
-          }
-          columnsEl.appendChild(col);
-        }
+        renderGrouped(items, colCount);
       } else {
-        // Flat split into columns: sequential chunks so reading order is col1 (top→bottom), then col2, etc.
-        const n = items.length;
-        const perCol = Math.ceil(n / colCount);
-        columnsEl.innerHTML = '';
-        for (let c = 0; c < colCount; c++) {
-          const start = c * perCol;
-          const end = Math.min(start + perCol, n);
-          const colItems = items.slice(start, end);
-          const col = document.createElement('div');
-          col.className = 'column';
-          for (const item of colItems) {
+        renderFlat(items, colCount);
+      }
+    }
+
+    function renderFlat(items, colCount) {
+      const n = items.length;
+      const perCol = Math.ceil(n / colCount);
+      columnsEl.innerHTML = '';
+      for (let c = 0; c < colCount; c++) {
+        const start = c * perCol;
+        const end = Math.min(start + perCol, n);
+        const colItems = items.slice(start, end);
+        const col = document.createElement('div');
+        col.className = 'column';
+        for (const item of colItems) {
+          col.appendChild(studentRow(item));
+        }
+        columnsEl.appendChild(col);
+      }
+    }
+
+    function renderGrouped(items, colCount) {
+      const groups = [];
+      let current = null;
+      for (const item of items) {
+        if (!current || current.letter !== item.groupKey) {
+          current = { letter: item.groupKey, items: [] };
+          groups.push(current);
+        }
+        current.items.push(item);
+      }
+
+      const totalItems = items.length;
+      const targetPerCol = Math.ceil(totalItems / colCount);
+      const cols = Array.from({ length: colCount }, () => []);
+      let colIdx = 0, countInCol = 0;
+
+      for (let i = 0; i < groups.length; i++) {
+        const g = groups[i];
+        const remainingGroups = groups.length - i;
+        const remainingCols = colCount - colIdx;
+        const mustBreak = (countInCol > 0) &&
+                          ((countInCol + g.items.length) > targetPerCol) &&
+                          (remainingGroups >= remainingCols);
+        if (mustBreak && colIdx < colCount - 1) {
+          colIdx++;
+          countInCol = 0;
+        }
+        cols[colIdx].push(g);
+        countInCol += g.items.length;
+      }
+
+      columnsEl.innerHTML = '';
+      for (let c = 0; c < colCount; c++) {
+        const col = document.createElement('div');
+        col.className = 'column';
+        const groupsInCol = cols[c];
+        for (const g of groupsInCol) {
+          const header = document.createElement('div');
+          header.className = 'group-header';
+          header.textContent = g.letter;
+          col.appendChild(header);
+          for (const item of g.items) {
             col.appendChild(studentRow(item));
           }
-          columnsEl.appendChild(col);
         }
+        columnsEl.appendChild(col);
       }
     }
 
@@ -298,8 +321,6 @@
     }
 
     /* ============== Helpers ============== */
-
-    // Transform "Last, First Middle" -> "First Middle Last"
     function toFirstLast(name) {
       const s = (name || '').trim();
       if (!s) return '';
@@ -311,31 +332,25 @@
       }
       return s;
     }
-
     function normalizeForSort(s) {
       return s.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, ' ').trim();
     }
-
     function groupLetter(s) {
       const m = (s || '').trim().match(/\p{L}|\p{N}/u);
       return (m ? m[0] : '#').toUpperCase();
     }
-
     function getColumnCount() {
       if (window.matchMedia('(min-width: 960px)').matches) return 3;
       if (window.matchMedia('(min-width: 640px)').matches) return 2;
       return 1;
     }
-
-    function debounce(fn, ms) {
-      let t; return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), ms); };
-    }
-
+    function debounce(fn, ms) { let t; return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), ms); }; }
     function selectedNames() {
       return Array.from(document.querySelectorAll('input.student-box:checked'))
-        .map(cb => cb.getAttribute('data-name')); // ORIGINAL names go to the backend
+        .map(cb => cb.getAttribute('data-name'));
     }
 
+    /* ============== Submit ============== */
     submitEl.addEventListener('click', async () => {
       const names = selectedNames();
       if (!names.length) return setStatus('Please check at least one student.', true);
@@ -375,7 +390,6 @@
       statusEl.classList.toggle('error', isError);
       statusEl.classList.toggle('muted', !isError);
     }
-
     function escapeHtml(s) {
       return s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
     }
