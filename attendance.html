@@ -16,10 +16,9 @@
       --danger: #cf222e;
       --chip: #f6f8fa;
       --chip-hover: #f0f1f2;
-      --msu: #115740; /* Spartan Green */
+      --msu: #115740;     /* Spartan Green */
       --msu-contrast: #ffffff;
     }
-
     /* Dark theme overrides */
     body.dark {
       --bg: #0d1117;
@@ -48,7 +47,7 @@
     main {
       width: 100%;
       max-width: 980px;
-      padding: 24px 16px; /* no bottom padding; we'll use a spacer div instead */
+      padding: 24px 16px; /* spacer div will handle bottom scroll room */
     }
     h1 { font-size: 1.35rem; margin: 0 0 .5rem; }
     .muted { color: var(--muted); }
@@ -81,14 +80,14 @@
       justify-content: center;
       align-items: center;
       font-weight: 900;
-      font-size: 1.35rem;          /* larger */
+      font-size: 1.35rem;     /* larger */
       letter-spacing: .08em;
       text-transform: uppercase;
       color: var(--msu-contrast);
       background: var(--msu);
       border: 1px solid rgba(0,0,0,0.15);
       border-radius: 999px;
-      padding: .55rem 1.1rem;      /* bigger bubble */
+      padding: .55rem 1.1rem; /* bigger bubble */
       margin: .2rem 0 .2rem;
       box-shadow: 0 2px 6px rgba(0,0,0,0.25);
       text-align: center;
@@ -108,10 +107,8 @@
     label.student:hover { border-color: #3b82f6; background: var(--chip-hover); }
     input[type="checkbox"].student-box { width: 20px; height: 20px; margin: 0; accent-color: var(--accent); }
 
-    /* Actions area: full-width button that matches the columns width */
-    .actions {
-      margin-top: 12px;
-    }
+    /* Actions area: full-width button matching the columns width */
+    .actions { margin-top: 12px; }
     .actions button {
       display: block;
       width: 100%;
@@ -131,13 +128,13 @@
     .status.error { color: var(--danger); }
 
     /* Guaranteed scroll space below the button */
-    .spacer { height: 220px; }     /* adjust as you like */
+    .spacer { height: 220px; }     /* adjust as desired */
   </style>
 </head>
 <body class="dark"><!-- starts in dark mode -->
   <main>
     <div class="header">
-      <h1>CMSE 201-8 Attendance Checklist</h1>
+      <h1>Attendance</h1>
       <div id="date" class="muted"></div>
     </div>
 
@@ -161,7 +158,7 @@
       <div class="card muted">Loading students…</div>
     </div>
 
-    <!-- Full-width Submit (same width as columns) -->
+    <!-- Full-width Submit -->
     <div class="actions">
       <button id="submit">Submit</button>
       <span id="status" class="status muted"></span>
@@ -208,12 +205,13 @@
       document.body.classList.toggle('dark', optDarkMode.checked);
       saveOptions();
     });
-
     optSortByFirst.addEventListener('change', () => { saveOptions(); render(); });
     optGroupByFirst.addEventListener('change', () => { saveOptions(); render(); });
 
-    // Data cache
-    let originalNames = []; // raw names from Sheet (unchanged; used for POST)
+    // Data and iOS/Safari-safe render state
+    let originalNames = [];        // from Sheet
+    let selectedSet   = new Set(); // preserves checked names across renders
+    let lastColCount  = null;      // avoid unnecessary re-renders on iOS "resize while scrolling"
 
     // Load and render
     loadNames();
@@ -230,16 +228,32 @@
       }
     }
 
-    window.addEventListener('resize', debounce(render, 100));
+    // Only re-render on resize if the column count changed (prevents iOS checkbox resets)
+    window.addEventListener('resize', debounce(() => {
+      const cc = getColumnCount();
+      if (cc !== lastColCount) render();
+    }, 100), { passive: true });
 
-    /* ============== Rendering logic ============== */
+    /* ===================== Rendering ===================== */
+
+    function captureSelection() {
+      // Merge DOM state into selectedSet before we rebuild
+      document.querySelectorAll('input.student-box').forEach(cb => {
+        const name = cb.getAttribute('data-name');
+        if (!name) return;
+        if (cb.checked) selectedSet.add(name); else selectedSet.delete(name);
+      });
+    }
 
     function render() {
+      captureSelection(); // preserve current checks
+
       const byFirst = optSortByFirst.checked;
       const grouped = optGroupByFirst.checked;
       const colCount = getColumnCount();
+      lastColCount = colCount;
 
-      // Build [{orig, display, sortKey, groupKey}]
+      // Build display items
       const items = originalNames.map(n => {
         const display = byFirst ? toFirstLast(n) : n;
         const dispTrim = (display || '').trim();
@@ -249,9 +263,7 @@
           sortKey: normalizeForSort(dispTrim),
           groupKey: groupLetter(dispTrim)
         };
-      });
-
-      items.sort((a, b) => a.sortKey.localeCompare(b.sortKey));
+      }).sort((a, b) => a.sortKey.localeCompare(b.sortKey));
 
       if (!items.length) {
         columnsEl.innerHTML = `<div class="card muted">No names found in the sheet.</div>`;
@@ -266,6 +278,7 @@
     }
 
     function renderFlat(items, colCount) {
+      // Sequential chunks so reading order is col1(top→bottom), then col2, then col3
       const n = items.length;
       const perCol = Math.ceil(n / colCount);
       columnsEl.innerHTML = '';
@@ -275,14 +288,13 @@
         const colItems = items.slice(start, end);
         const col = document.createElement('div');
         col.className = 'column';
-        for (const item of colItems) {
-          col.appendChild(studentRow(item));
-        }
+        for (const item of colItems) col.appendChild(studentRow(item));
         columnsEl.appendChild(col);
       }
     }
 
     function renderGrouped(items, colCount) {
+      // Build whole groups by letter
       const groups = [];
       let current = null;
       for (const item of items) {
@@ -293,6 +305,7 @@
         current.items.push(item);
       }
 
+      // Distribute groups across columns without splitting groups
       const totalItems = items.length;
       const targetPerCol = Math.ceil(totalItems / colCount);
       const cols = Array.from({ length: colCount }, () => []);
@@ -313,6 +326,7 @@
         countInCol += g.items.length;
       }
 
+      // Render columns
       columnsEl.innerHTML = '';
       for (let c = 0; c < colCount; c++) {
         const col = document.createElement('div');
@@ -323,9 +337,7 @@
           header.className = 'group-header';
           header.textContent = g.letter;
           col.appendChild(header);
-          for (const item of g.items) {
-            col.appendChild(studentRow(item));
-          }
+          for (const item of g.items) col.appendChild(studentRow(item));
         }
         columnsEl.appendChild(col);
       }
@@ -334,14 +346,21 @@
     function studentRow(item) {
       const row = document.createElement('label');
       row.className = 'student';
+      const checkedAttr = selectedSet.has(item.orig) ? 'checked' : '';
       row.innerHTML = `
-        <input class="student-box" type="checkbox" data-name="${escapeHtml(item.orig)}" />
+        <input class="student-box" type="checkbox" data-name="${escapeHtml(item.orig)}" ${checkedAttr} />
         <span>${escapeHtml(item.display)}</span>
       `;
+      // Keep the set synced as user taps
+      const cb = row.querySelector('input.student-box');
+      cb.addEventListener('change', () => {
+        const name = cb.getAttribute('data-name');
+        if (cb.checked) selectedSet.add(name); else selectedSet.delete(name);
+      }, { passive: true });
       return row;
     }
 
-    /* ============== Helpers ============== */
+    /* ===================== Helpers ===================== */
     function toFirstLast(name) {
       const s = (name || '').trim();
       if (!s) return '';
@@ -366,14 +385,13 @@
       return 1;
     }
     function debounce(fn, ms) { let t; return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), ms); }; }
-    function selectedNames() {
-      return Array.from(document.querySelectorAll('input.student-box:checked'))
-        .map(cb => cb.getAttribute('data-name'));
+    function escapeHtml(s) {
+      return s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
     }
 
-    /* ============== Submit ============== */
+    /* ===================== Submit ===================== */
     submitEl.addEventListener('click', async () => {
-      const names = selectedNames();
+      const names = Array.from(selectedSet);
       if (!names.length) return setStatus('Please check at least one student.', true);
 
       submitEl.disabled = true;
@@ -390,15 +408,13 @@
         const data = await res.json().catch(() => ({}));
         if (!data.ok) throw new Error(data.error || 'Unknown error');
 
+        // Clear selections on success
+        selectedSet.clear();
         document.querySelectorAll('input.student-box').forEach(cb => cb.checked = false);
 
         const updated = (data.updated || []).join(', ');
         const missing = (data.missing || []);
-        setStatus(
-          missing.length
-            ? `Saved. Updated: ${updated}. Not found: ${missing.join(', ')}.`
-            : `Saved. Updated: ${updated}.`
-        );
+        setStatus(missing.length ? `Saved. Updated: ${updated}. Not found: ${missing.join(', ')}.` : `Saved. Updated: ${updated}.`);
       } catch (err) {
         setStatus('Error: ' + String(err), true);
       } finally {
@@ -410,9 +426,6 @@
       statusEl.textContent = msg;
       statusEl.classList.toggle('error', isError);
       statusEl.classList.toggle('muted', !isError);
-    }
-    function escapeHtml(s) {
-      return s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
     }
   </script>
 </body>
