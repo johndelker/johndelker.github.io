@@ -18,8 +18,6 @@
       --chip-hover: #f0f1f2;
       --msu: #115740;     /* Spartan Green */
       --msu-contrast: #ffffff;
-      --btn: var(--accent);
-      --btn-text: #fff;
     }
     /* Dark theme overrides */
     body.dark {
@@ -34,8 +32,6 @@
       --chip-hover: #0f1a28;
       --msu: #115740;
       --msu-contrast: #ffffff;
-      --btn: var(--accent);
-      --btn-text: #111;
     }
 
     * { box-sizing: border-box; }
@@ -51,7 +47,7 @@
     main {
       width: 100%;
       max-width: 980px;
-      padding: 24px 16px; /* spacer div will handle bottom scroll room */
+      padding: 24px 16px; /* spacer div handles bottom scroll room */
     }
     h1 { font-size: 1.35rem; margin: 0 0 .5rem; }
     .muted { color: var(--muted); }
@@ -67,27 +63,28 @@
     }
     .opt input[type="checkbox"] { width: 18px; height: 18px; margin: 0; accent-color: var(--accent); }
 
-    /* Group buttons */
-    .group-opt { display: flex; align-items: center; gap: 8px; }
-    .group-label { font-weight: 600; }
+    /* Group buttons (responsive, wraps, Do Not Change fits) */
+    .group-opt { display: flex; align-items: center; gap: 8px; width: 100%; }
+    .group-label { font-weight: 600; white-space: nowrap; }
     .group-row {
       display: grid;
-      grid-template-columns: repeat(11, minmax(36px, 1fr)); /* "none" + 1..10 */
-      gap: 6px;
+      /* auto-fitting columns that wrap; min width ensures "Do Not Change" fits */
+      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+      gap: 8px;
       width: 100%;
     }
     .group-btn {
       border: 1px solid var(--border);
       background: var(--panel);
       color: var(--text);
-      padding: .45rem .4rem;
-      border-radius: 8px;
+      padding: .55rem .7rem;
+      border-radius: 10px;
       cursor: pointer;
       text-align: center;
       user-select: none;
       font-weight: 700;
       transition: transform .05s ease, border-color .15s ease, background .15s ease;
-      white-space: nowrap;
+      white-space: nowrap; /* keep text on one line */
     }
     .group-btn:hover { border-color: var(--accent); }
     .group-btn.active {
@@ -108,7 +105,7 @@
       min-height: 40px;
     }
 
-    /* Spartan-green letter bubble headers */
+    /* Spartan-green letter/group bubble headers */
     .group-header {
       display: flex;
       justify-content: center;
@@ -183,6 +180,10 @@
         <span>Group by first letter</span>
       </label>
       <label class="opt">
+        <input type="checkbox" id="optGroupByGroup" />
+        <span>Group by group</span>
+      </label>
+      <label class="opt">
         <input type="checkbox" id="optDarkMode" checked />
         <span>Dark mode</span>
       </label>
@@ -190,7 +191,7 @@
 
     <!-- Group buttons (with "Do Not Change") -->
     <div class="options card">
-      <div class="group-opt" style="width:100%;">
+      <div class="group-opt">
         <span class="group-label">Group:</span>
         <div id="groupRow" class="group-row"></div>
       </div>
@@ -211,22 +212,22 @@
   </main>
 
   <script>
-    const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbwmsC6VggeBxUOp9I_b0GIoIiF_FuuWs5uF47x68BbdnqlAyjem7wuVw9WT9Seb6GBs/exec';
+    const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbzMxo_vrJzsYM9aFK9-l3ra4pu6k5bP8APA4pLXjW6dYK9w_Lf-bCWNUgVXqLQ4RZK7/exec';
 
     const columnsEl = document.getElementById('columns');
     const statusEl  = document.getElementById('status');
     const dateEl    = document.getElementById('date');
     const submitEl  = document.getElementById('submit');
 
-    const optSortByFirst  = document.getElementById('optSortByFirst');
-    const optGroupByFirst = document.getElementById('optGroupByFirst');
-    const optDarkMode     = document.getElementById('optDarkMode');
-    const groupRowEl      = document.getElementById('groupRow');
+    const optSortByFirst   = document.getElementById('optSortByFirst');
+    const optGroupByFirst  = document.getElementById('optGroupByFirst');
+    const optGroupByGroup  = document.getElementById('optGroupByGroup');
+    const optDarkMode      = document.getElementById('optDarkMode');
+    const groupRowEl       = document.getElementById('groupRow');
 
     dateEl.textContent = new Date().toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
 
     /* ---------- Group buttons: "Do Not Change" + 1..10 ---------- */
-    // value 'none' is the "Do Not Change" sentinel
     const groupOptions = ['none', 1,2,3,4,5,6,7,8,9,10];
     let selectedGroup = 'none'; // default
 
@@ -255,26 +256,43 @@
 
     /* ---------- Load saved options ---------- */
     const savedOptions = JSON.parse(localStorage.getItem('attendanceOptions') || '{}');
-    if ('sortByFirst' in savedOptions) optSortByFirst.checked = savedOptions.sortByFirst;
+    if ('sortByFirst' in savedOptions)  optSortByFirst.checked  = savedOptions.sortByFirst;
     if ('groupByFirst' in savedOptions) optGroupByFirst.checked = savedOptions.groupByFirst;
+    if ('groupByGroup' in savedOptions) optGroupByGroup.checked = savedOptions.groupByGroup;
     if ('darkMode' in savedOptions) {
       optDarkMode.checked = savedOptions.darkMode;
       document.body.classList.toggle('dark', optDarkMode.checked);
     }
-    if ('selectedGroup' in savedOptions && (savedOptions.selectedGroup === 'none' || (Number(savedOptions.selectedGroup) >= 1 && Number(savedOptions.selectedGroup) <= 10))) {
+    if ('selectedGroup' in savedOptions &&
+        (savedOptions.selectedGroup === 'none' || (+savedOptions.selectedGroup >= 1 && +savedOptions.selectedGroup <= 10))) {
       selectedGroup = String(savedOptions.selectedGroup);
     }
-    makeGroupButtons(); // build once; not rebuilt during renders → Safari-safe
+    makeGroupButtons(); // build once; Safari-safe
 
     function saveOptions() {
       const opts = {
-        sortByFirst: optSortByFirst.checked,
+        sortByFirst:  optSortByFirst.checked,
         groupByFirst: optGroupByFirst.checked,
-        darkMode: optDarkMode.checked,
+        groupByGroup: optGroupByGroup.checked,
+        darkMode:     optDarkMode.checked,
         selectedGroup
       };
       localStorage.setItem('attendanceOptions', JSON.stringify(opts));
     }
+
+    // Mutually exclusive grouping toggles
+    optGroupByGroup.addEventListener('change', () => {
+      if (optGroupByGroup.checked) {
+        optGroupByFirst.checked = false;
+      }
+      saveOptions(); render();
+    });
+    optGroupByFirst.addEventListener('change', () => {
+      if (optGroupByFirst.checked) {
+        optGroupByGroup.checked = false;
+      }
+      saveOptions(); render();
+    });
 
     // Dark mode toggle
     optDarkMode.addEventListener('change', () => {
@@ -282,12 +300,11 @@
       saveOptions();
     });
     optSortByFirst.addEventListener('change', () => { saveOptions(); render(); });
-    optGroupByFirst.addEventListener('change', () => { saveOptions(); render(); });
 
     /* ---------- Data & iOS-safe render state ---------- */
-    let originalNames = [];        // from Sheet
-    let selectedSet   = new Set(); // preserves checked names across renders
-    let lastColCount  = null;      // avoid unnecessary re-renders on iOS "resize while scrolling"
+    let originalRows = [];        // [{name, group}]
+    let selectedSet  = new Set(); // preserves checked names across renders
+    let lastColCount = null;      // avoid unnecessary re-renders on iOS "resize while scrolling"
 
     // Load and render
     loadNames();
@@ -297,7 +314,14 @@
         const res = await fetch(WEB_APP_URL, { method: 'GET' });
         const data = await res.json();
         if (!data.ok) throw new Error(data.error || 'Failed to load names');
-        originalNames = data.names || [];
+        // Backward-compat: if server only returns names, synthesize rows
+        if (Array.isArray(data.rows)) {
+          originalRows = data.rows.map(r => ({ name: r.name, group: (r.group || '').toString().trim() }));
+        } else if (Array.isArray(data.names)) {
+          originalRows = data.names.map(n => ({ name: n, group: '' }));
+        } else {
+          originalRows = [];
+        }
         render();
       } catch (err) {
         columnsEl.innerHTML = `<div class="card muted">Error loading names: ${escapeHtml(String(err))}</div>`;
@@ -313,7 +337,6 @@
     /* ===================== Rendering ===================== */
 
     function captureSelection() {
-      // Merge DOM state into selectedSet before we rebuild
       document.querySelectorAll('input.student-box').forEach(cb => {
         const name = cb.getAttribute('data-name');
         if (!name) return;
@@ -324,20 +347,22 @@
     function render() {
       captureSelection(); // preserve current checks
 
-      const byFirst = optSortByFirst.checked;
-      const grouped = optGroupByFirst.checked;
-      const colCount = getColumnCount();
+      const byFirst   = optSortByFirst.checked;
+      const byLetter  = optGroupByFirst.checked;
+      const byGroup   = optGroupByGroup.checked;
+      const colCount  = getColumnCount();
       lastColCount = colCount;
 
-      // Build display items
-      const items = originalNames.map(n => {
-        const display = byFirst ? toFirstLast(n) : n;
+      // Build normalized items
+      const items = originalRows.map(r => {
+        const display = byFirst ? toFirstLast(r.name) : r.name;
         const dispTrim = (display || '').trim();
         return {
-          orig: n,
+          orig: r.name,
           display: dispTrim,
           sortKey: normalizeForSort(dispTrim),
-          groupKey: groupLetter(dispTrim)
+          letterKey: groupLetter(dispTrim),
+          groupKey: (r.group || '').toString().trim() || '—' // use em dash for empty groups
         };
       }).sort((a, b) => a.sortKey.localeCompare(b.sortKey));
 
@@ -346,42 +371,43 @@
         return;
       }
 
-      if (grouped) {
-        renderGrouped(items, colCount);
+      if (byGroup) {
+        renderGroupedBy(items, colCount, 'groupKey');
+      } else if (byLetter) {
+        renderGroupedBy(items, colCount, 'letterKey');
       } else {
         renderFlat(items, colCount);
       }
     }
 
     function renderFlat(items, colCount) {
-      // Sequential chunks so reading order is col1(top→bottom), then col2, then col3
       const n = items.length;
       const perCol = Math.ceil(n / colCount);
       columnsEl.innerHTML = '';
       for (let c = 0; c < colCount; c++) {
         const start = c * perCol;
         const end = Math.min(start + perCol, n);
-        const colItems = items.slice(start, end);
         const col = document.createElement('div');
         col.className = 'column';
-        for (const item of colItems) col.appendChild(studentRow(item));
+        for (const item of items.slice(start, end)) col.appendChild(studentRow(item));
         columnsEl.appendChild(col);
       }
     }
 
-    function renderGrouped(items, colCount) {
-      // Build whole groups by letter
+    function renderGroupedBy(items, colCount, key) {
+      // Build whole groups (key is 'letterKey' or 'groupKey')
       const groups = [];
-      let current = null;
-      for (const item of items) {
-        if (!current || current.letter !== item.groupKey) {
-          current = { letter: item.groupKey, items: [] };
+      let current = null, currentKey = null;
+      for (const it of items) {
+        if (currentKey !== it[key]) {
+          currentKey = it[key];
+          current = { label: currentKey, items: [] };
           groups.push(current);
         }
-        current.items.push(item);
+        current.items.push(it);
       }
 
-      // Distribute groups across columns without splitting groups
+      // Distribute groups without splitting
       const totalItems = items.length;
       const targetPerCol = Math.ceil(totalItems / colCount);
       const cols = Array.from({ length: colCount }, () => []);
@@ -407,11 +433,10 @@
       for (let c = 0; c < colCount; c++) {
         const col = document.createElement('div');
         col.className = 'column';
-        const groupsInCol = cols[c];
-        for (const g of groupsInCol) {
+        for (const g of cols[c]) {
           const header = document.createElement('div');
           header.className = 'group-header';
-          header.textContent = g.letter;
+          header.textContent = g.label;
           col.appendChild(header);
           for (const item of g.items) col.appendChild(studentRow(item));
         }
@@ -427,7 +452,6 @@
         <input class="student-box" type="checkbox" data-name="${escapeHtml(item.orig)}" ${checkedAttr} />
         <span>${escapeHtml(item.display)}</span>
       `;
-      // Keep the set synced as user taps
       const cb = row.querySelector('input.student-box');
       cb.addEventListener('change', () => {
         const name = cb.getAttribute('data-name');
@@ -487,14 +511,12 @@
         const data = await res.json().catch(() => ({}));
         if (!data.ok) throw new Error(data.error || 'Unknown error');
 
-        // Clear selections on success
         selectedSet.clear();
         document.querySelectorAll('input.student-box').forEach(cb => cb.checked = false);
 
         const updated = (data.updated || []).join(', ');
         const grouped = (data.grouped || []).join(', ');
         const missing = (data.missing || []);
-
         let msg = `Saved. Updated attendance: ${updated || '—'}.`;
         if (data.groupApplied) msg += ` Set Group=${data.groupApplied} for: ${grouped || '—'}.`;
         if (missing.length) msg += ` Not found: ${missing.join(', ')}.`;
