@@ -18,6 +18,8 @@
       --chip-hover: #f0f1f2;
       --msu: #115740;     /* Spartan Green */
       --msu-contrast: #ffffff;
+      --btn: var(--accent);
+      --btn-text: #fff;
     }
     /* Dark theme overrides */
     body.dark {
@@ -32,6 +34,8 @@
       --chip-hover: #0f1a28;
       --msu: #115740;
       --msu-contrast: #ffffff;
+      --btn: var(--accent);
+      --btn-text: #111;
     }
 
     * { box-sizing: border-box; }
@@ -56,12 +60,42 @@
     .header { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 8px; }
 
     /* Options bar */
-    .options { display: flex; flex-wrap: wrap; gap: 12px; margin: 12px 0 8px; }
+    .options { display: flex; flex-wrap: wrap; gap: 12px; margin: 12px 0 8px; align-items: center; }
     .opt {
       display: inline-flex; align-items: center; gap: .55rem;
       padding: .5rem .7rem; border: 1px solid var(--border); border-radius: 10px; background: var(--panel);
     }
     .opt input[type="checkbox"] { width: 18px; height: 18px; margin: 0; accent-color: var(--accent); }
+
+    /* Group buttons */
+    .group-opt { display: flex; align-items: center; gap: 8px; }
+    .group-label { font-weight: 600; }
+    .group-row {
+      display: grid;
+      grid-template-columns: repeat(11, minmax(36px, 1fr)); /* "none" + 1..10 */
+      gap: 6px;
+      width: 100%;
+    }
+    .group-btn {
+      border: 1px solid var(--border);
+      background: var(--panel);
+      color: var(--text);
+      padding: .45rem .4rem;
+      border-radius: 8px;
+      cursor: pointer;
+      text-align: center;
+      user-select: none;
+      font-weight: 700;
+      transition: transform .05s ease, border-color .15s ease, background .15s ease;
+      white-space: nowrap;
+    }
+    .group-btn:hover { border-color: var(--accent); }
+    .group-btn.active {
+      background: var(--msu);
+      color: var(--msu-contrast);
+      border-color: var(--msu);
+      transform: translateY(-1px);
+    }
 
     /* Columns container */
     .columns { display: grid; grid-template-columns: 1fr; gap: 12px; margin: 12px 0; }
@@ -80,14 +114,14 @@
       justify-content: center;
       align-items: center;
       font-weight: 900;
-      font-size: 1.35rem;     /* larger */
+      font-size: 1.35rem;
       letter-spacing: .08em;
       text-transform: uppercase;
       color: var(--msu-contrast);
       background: var(--msu);
       border: 1px solid rgba(0,0,0,0.15);
       border-radius: 999px;
-      padding: .55rem 1.1rem; /* bigger bubble */
+      padding: .55rem 1.1rem;
       margin: .2rem 0 .2rem;
       box-shadow: 0 2px 6px rgba(0,0,0,0.25);
       text-align: center;
@@ -107,31 +141,31 @@
     label.student:hover { border-color: #3b82f6; background: var(--chip-hover); }
     input[type="checkbox"].student-box { width: 20px; height: 20px; margin: 0; accent-color: var(--accent); }
 
-    /* Actions area: full-width button matching the columns width */
+    /* Full-width Submit */
     .actions { margin-top: 12px; }
     .actions button {
       display: block;
       width: 100%;
-      padding: 1.1rem 1.2rem;      /* larger hit area */
+      padding: 1.1rem 1.2rem;
       border: 1px solid var(--border);
       border-radius: 12px;
       background: var(--accent);
       color: white;
-      font-weight: 900;            /* bolder */
-      font-size: 1.15rem;          /* larger text */
+      font-weight: 900;
+      font-size: 1.15rem;
       letter-spacing: .06em;
-      text-transform: uppercase;   /* ALL CAPS */
+      text-transform: uppercase;
       cursor: pointer;
     }
     .actions button:disabled { opacity: .6; cursor: not-allowed; }
     .status { display: block; margin-top: .6rem; min-height: 1.2rem; }
     .status.error { color: var(--danger); }
 
-    /* Guaranteed scroll space below the button */
-    .spacer { height: 220px; }     /* adjust as desired */
+    /* Spacer ensures scroll past button */
+    .spacer { height: 220px; }
   </style>
 </head>
-<body class="dark"><!-- starts in dark mode -->
+<body class="dark">
   <main>
     <div class="header">
       <h1>Attendance</h1>
@@ -152,6 +186,14 @@
         <input type="checkbox" id="optDarkMode" checked />
         <span>Dark mode</span>
       </label>
+    </div>
+
+    <!-- Group buttons (with "Do Not Change") -->
+    <div class="options card">
+      <div class="group-opt" style="width:100%;">
+        <span class="group-label">Group:</span>
+        <div id="groupRow" class="group-row"></div>
+      </div>
     </div>
 
     <div id="columns" class="columns" aria-live="polite">
@@ -179,10 +221,39 @@
     const optSortByFirst  = document.getElementById('optSortByFirst');
     const optGroupByFirst = document.getElementById('optGroupByFirst');
     const optDarkMode     = document.getElementById('optDarkMode');
+    const groupRowEl      = document.getElementById('groupRow');
 
     dateEl.textContent = new Date().toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
 
-    // === Load saved options from localStorage ===
+    /* ---------- Group buttons: "Do Not Change" + 1..10 ---------- */
+    // value 'none' is the "Do Not Change" sentinel
+    const groupOptions = ['none', 1,2,3,4,5,6,7,8,9,10];
+    let selectedGroup = 'none'; // default
+
+    function makeGroupButtons() {
+      groupRowEl.innerHTML = '';
+      groupOptions.forEach(val => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'group-btn';
+        btn.dataset.value = String(val);
+        btn.textContent = val === 'none' ? 'Do Not Change' : String(val);
+        btn.addEventListener('click', () => {
+          selectedGroup = String(val);
+          renderGroupButtons();
+          saveOptions();
+        }, { passive: true });
+        groupRowEl.appendChild(btn);
+      });
+      renderGroupButtons();
+    }
+    function renderGroupButtons() {
+      groupRowEl.querySelectorAll('.group-btn').forEach(b => {
+        b.classList.toggle('active', b.dataset.value === String(selectedGroup));
+      });
+    }
+
+    /* ---------- Load saved options ---------- */
     const savedOptions = JSON.parse(localStorage.getItem('attendanceOptions') || '{}');
     if ('sortByFirst' in savedOptions) optSortByFirst.checked = savedOptions.sortByFirst;
     if ('groupByFirst' in savedOptions) optGroupByFirst.checked = savedOptions.groupByFirst;
@@ -190,12 +261,17 @@
       optDarkMode.checked = savedOptions.darkMode;
       document.body.classList.toggle('dark', optDarkMode.checked);
     }
+    if ('selectedGroup' in savedOptions && (savedOptions.selectedGroup === 'none' || (Number(savedOptions.selectedGroup) >= 1 && Number(savedOptions.selectedGroup) <= 10))) {
+      selectedGroup = String(savedOptions.selectedGroup);
+    }
+    makeGroupButtons(); // build once; not rebuilt during renders → Safari-safe
 
     function saveOptions() {
       const opts = {
         sortByFirst: optSortByFirst.checked,
         groupByFirst: optGroupByFirst.checked,
-        darkMode: optDarkMode.checked
+        darkMode: optDarkMode.checked,
+        selectedGroup
       };
       localStorage.setItem('attendanceOptions', JSON.stringify(opts));
     }
@@ -208,7 +284,7 @@
     optSortByFirst.addEventListener('change', () => { saveOptions(); render(); });
     optGroupByFirst.addEventListener('change', () => { saveOptions(); render(); });
 
-    // Data and iOS/Safari-safe render state
+    /* ---------- Data & iOS-safe render state ---------- */
     let originalNames = [];        // from Sheet
     let selectedSet   = new Set(); // preserves checked names across renders
     let lastColCount  = null;      // avoid unnecessary re-renders on iOS "resize while scrolling"
@@ -397,7 +473,10 @@
       submitEl.disabled = true;
       setStatus('Submitting…');
 
-      const body = new URLSearchParams({ names: JSON.stringify(names) }).toString();
+      const body = new URLSearchParams({
+        names: JSON.stringify(names),
+        group: String(selectedGroup) // 'none' or '1'..'10'
+      }).toString();
 
       try {
         const res = await fetch(WEB_APP_URL, {
@@ -413,8 +492,13 @@
         document.querySelectorAll('input.student-box').forEach(cb => cb.checked = false);
 
         const updated = (data.updated || []).join(', ');
+        const grouped = (data.grouped || []).join(', ');
         const missing = (data.missing || []);
-        setStatus(missing.length ? `Saved. Updated: ${updated}. Not found: ${missing.join(', ')}.` : `Saved. Updated: ${updated}.`);
+
+        let msg = `Saved. Updated attendance: ${updated || '—'}.`;
+        if (data.groupApplied) msg += ` Set Group=${data.groupApplied} for: ${grouped || '—'}.`;
+        if (missing.length) msg += ` Not found: ${missing.join(', ')}.`;
+        setStatus(msg);
       } catch (err) {
         setStatus('Error: ' + String(err), true);
       } finally {
