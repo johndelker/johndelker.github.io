@@ -16,7 +16,7 @@
       --danger: #cf222e;
       --chip: #f6f8fa;
       --chip-hover: #f0f1f2;
-      --msu: #115740;     /* Spartan Green */
+      --msu: #115740;           /* Spartan Green */
       --msu-contrast: #ffffff;
     }
     /* Dark theme overrides */
@@ -47,51 +47,66 @@
     main {
       width: 100%;
       max-width: 980px;
-      padding: 24px 16px; /* spacer div handles bottom scroll room */
+      padding: 24px 16px;
     }
-    h1 { font-size: 1.35rem; margin: 0 0 .5rem; }
+    h1 { font-size: 1.35rem; margin: 0; }
     .muted { color: var(--muted); }
 
     .card { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 12px; }
-    .header { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 8px; }
 
-    /* Options bar */
-    .options { display: flex; flex-wrap: wrap; gap: 12px; margin: 12px 0 8px; align-items: center; }
-    .opt {
-      display: inline-flex; align-items: center; gap: .55rem;
-      padding: .5rem .7rem; border: 1px solid var(--border); border-radius: 10px; background: var(--panel);
+    /* Header with date + theme toggle on right */
+    .header {
+      display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 8px;
     }
-    .opt input[type="checkbox"] { width: 18px; height: 18px; margin: 0; accent-color: var(--accent); }
+    .right {
+      display: inline-flex; align-items: center; gap: 8px;
+      color: var(--muted);
+    }
+    .theme-toggle {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 36px; height: 36px; border-radius: 10px; border: 1px solid var(--border);
+      background: var(--panel); cursor: pointer; font-size: 18px;
+    }
 
-    /* Group buttons (responsive, wraps, "Do Not Change" fits) */
-    .group-opt { display: flex; align-items: center; gap: 8px; width: 100%; }
-    .group-label { font-weight: 600; white-space: nowrap; }
+    /* Controls rows */
+    .control-row { display: flex; flex-wrap: wrap; gap: 12px; margin: 12px 0 8px; align-items: center; }
+    .label { font-weight: 700; white-space: nowrap; }
+
+    /* Segmented control for "Group by" */
+    .seg {
+      display: inline-flex; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; background: var(--panel);
+    }
+    .seg button {
+      border: 0; background: transparent; padding: .5rem .8rem; cursor: pointer; font-weight: 600;
+    }
+    .seg button + button { border-left: 1px solid var(--border); }
+    .seg button.active { background: var(--msu); color: var(--msu-contrast); }
+
+    /* Group Number picker */
+    .group-opt { display: flex; align-items: center; gap: 10px; width: 100%; }
     .group-row {
       display: grid;
-      /* auto-fit wraps to multiple lines; 140px ensures "Do Not Change" fits */
-      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-      gap: 8px;
-      width: 100%;
+      grid-template-columns: minmax(160px, 2fr) repeat(auto-fit, minmax(40px, 1fr));
+      gap: 8px; width: 100%;
     }
+    /* "Do Not Change" stays wide */
     .group-btn {
-      border: 1px solid var(--border);
-      background: var(--panel);
-      color: var(--text);
-      padding: .55rem .7rem;
-      border-radius: 10px;
-      cursor: pointer;
-      text-align: center;
-      user-select: none;
-      font-weight: 700;
+      border: 1px solid var(--border); background: var(--panel); color: var(--text);
+      border-radius: 10px; cursor: pointer; user-select: none; font-weight: 700;
       transition: transform .05s ease, border-color .15s ease, background .15s ease;
-      white-space: nowrap;
+      white-space: nowrap; text-align: center;
+      padding: .55rem .7rem;
     }
     .group-btn:hover { border-color: var(--accent); }
-    .group-btn.active {
-      background: var(--msu);
-      color: var(--msu-contrast);
-      border-color: var(--msu);
-      transform: translateY(-1px);
+    .group-btn.active { background: var(--msu); color: var(--msu-contrast); border-color: var(--msu); transform: translateY(-1px); }
+
+    /* Numeric buttons: square, small */
+    .num-btn {
+      padding: 0;        /* we’ll size via box */
+      width: 40px;       /* square buttons */
+      height: 40px;
+      display: inline-flex; align-items: center; justify-content: center;
+      font-weight: 800;
     }
 
     /* Columns container */
@@ -107,33 +122,17 @@
 
     /* Bubble headers */
     .group-header {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      font-weight: 900;
-      font-size: 1.35rem;
-      letter-spacing: .08em;
-      text-transform: uppercase;
-      color: var(--msu-contrast);
-      background: var(--msu);
-      border: 1px solid rgba(0,0,0,0.15);
-      border-radius: 999px;
-      padding: .55rem 1.1rem;
-      margin: .2rem 0 .2rem;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.25);
-      text-align: center;
+      display: flex; justify-content: center; align-items: center;
+      font-weight: 900; font-size: 1.35rem; letter-spacing: .08em; text-transform: uppercase;
+      color: var(--msu-contrast); background: var(--msu);
+      border: 1px solid rgba(0,0,0,0.15); border-radius: 999px; padding: .55rem 1.1rem;
+      margin: .2rem 0 .2rem; box-shadow: 0 2px 6px rgba(0,0,0,0.25); text-align: center;
     }
 
     label.student {
-      display: flex;
-      align-items: center;
-      gap: .7rem;
-      padding: .8rem;
-      background: var(--chip);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      cursor: pointer;
-      transition: border-color .15s ease, background .15s ease;
+      display: flex; align-items: center; gap: .7rem;
+      padding: .8rem; background: var(--chip); border: 1px solid var(--border); border-radius: 10px;
+      cursor: pointer; transition: border-color .15s ease, background .15s ease;
     }
     label.student:hover { border-color: #3b82f6; background: var(--chip-hover); }
     input[type="checkbox"].student-box { width: 20px; height: 20px; margin: 0; accent-color: var(--accent); }
@@ -141,24 +140,15 @@
     /* Full-width Submit */
     .actions { margin-top: 12px; }
     .actions button {
-      display: block;
-      width: 100%;
-      padding: 1.1rem 1.2rem;
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      background: var(--accent);
-      color: white;
-      font-weight: 900;
-      font-size: 1.15rem;
-      letter-spacing: .06em;
-      text-transform: uppercase;
-      cursor: pointer;
+      display: block; width: 100%; padding: 1.1rem 1.2rem;
+      border: 1px solid var(--border); border-radius: 12px; background: var(--accent); color: white;
+      font-weight: 900; font-size: 1.15rem; letter-spacing: .06em; text-transform: uppercase; cursor: pointer;
     }
     .actions button:disabled { opacity: .6; cursor: not-allowed; }
     .status { display: block; margin-top: .6rem; min-height: 1.2rem; }
     .status.error { color: var(--danger); }
 
-    /* Spacer ensures scroll past button */
+    /* Spacer ensures scroll past the button */
     .spacer { height: 220px; }
   </style>
 </head>
@@ -166,33 +156,26 @@
   <main>
     <div class="header">
       <h1>Attendance</h1>
-      <div id="date" class="muted"></div>
+      <div class="right">
+        <span id="date" class="muted"></span>
+        <button id="themeToggle" class="theme-toggle" aria-label="Toggle dark mode" title="Toggle dark mode">🌙</button>
+      </div>
     </div>
 
-    <!-- Options -->
-    <div class="options">
-      <label class="opt">
-        <input type="checkbox" id="optSortByFirst" />
-        <span>Sort by first name</span>
-      </label>
-      <label class="opt">
-        <input type="checkbox" id="optGroupByFirst" checked />
-        <span>Group by first letter</span>
-      </label>
-      <label class="opt">
-        <input type="checkbox" id="optGroupByGroup" />
-        <span>Group by group</span>
-      </label>
-      <label class="opt">
-        <input type="checkbox" id="optDarkMode" checked />
-        <span>Dark mode</span>
-      </label>
+    <!-- Group by segmented control -->
+    <div class="control-row">
+      <span class="label">Group by</span>
+      <div class="seg" role="tablist" aria-label="Group by">
+        <button id="byGroup" class="active" role="tab" aria-selected="true">Group Number</button>
+        <button id="byAlphaLast" role="tab" aria-selected="false">Alphabetical (Last Name)</button>
+        <button id="byAlphaFirst" role="tab" aria-selected="false">Alphabetical (First Name)</button>
+      </div>
     </div>
 
-    <!-- Group buttons (with "Do Not Change") -->
-    <div class="options card">
+    <!-- Group Number picker -->
+    <div class="control-row card">
       <div class="group-opt">
-        <span class="group-label">Group:</span>
+        <span class="label">Group Number</span>
         <div id="groupRow" class="group-row"></div>
       </div>
     </div>
@@ -207,7 +190,6 @@
       <span id="status" class="status muted"></span>
     </div>
 
-    <!-- Spacer to ensure scroll past the button -->
     <div class="spacer"></div>
   </main>
 
@@ -218,117 +200,133 @@
     const statusEl  = document.getElementById('status');
     const dateEl    = document.getElementById('date');
     const submitEl  = document.getElementById('submit');
+    const themeToggle = document.getElementById('themeToggle');
 
-    const optSortByFirst   = document.getElementById('optSortByFirst');
-    const optGroupByFirst  = document.getElementById('optGroupByFirst');
-    const optGroupByGroup  = document.getElementById('optGroupByGroup');
-    const optDarkMode      = document.getElementById('optDarkMode');
-    const groupRowEl       = document.getElementById('groupRow');
+    // Group-by segmented buttons
+    const byGroupBtn     = document.getElementById('byGroup');
+    const byAlphaLastBtn = document.getElementById('byAlphaLast');
+    const byAlphaFirstBtn= document.getElementById('byAlphaFirst');
 
+    // Group Number picker row container
+    const groupRowEl = document.getElementById('groupRow');
+
+    // Date + theme
     dateEl.textContent = new Date().toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+    themeToggle.addEventListener('click', () => {
+      const isDark = document.body.classList.toggle('dark');
+      themeToggle.textContent = isDark ? '🌙' : '☀️';
+      // persist only dark mode + group-by mode
+      saveOptions();
+    });
 
-    /* ---------- Group buttons: "Do Not Change" + 1..10 (default = none each load) ---------- */
-    const groupOptions = ['none', 1,2,3,4,5,6,7,8,9,10];
-    let selectedGroup = 'none'; // ALWAYS default on load
-
-    function makeGroupButtons() {
-      groupRowEl.innerHTML = '';
-      groupOptions.forEach(val => {
-        const btn = document.createElement('button');
-        btn.type = 'button';
-        btn.className = 'group-btn';
-        btn.dataset.value = String(val);
-        btn.textContent = val === 'none' ? 'Do Not Change' : String(val);
-        btn.addEventListener('click', () => {
-          selectedGroup = String(val);
-          renderGroupButtons();
-          // note: we intentionally DO NOT persist selectedGroup between visits
-        }, { passive: true });
-        groupRowEl.appendChild(btn);
-      });
-      renderGroupButtons();
+    // === Persisted options (NOT the selected group number) ===
+    const saved = JSON.parse(localStorage.getItem('attendanceOptions') || '{}');
+    // Dark mode default ON unless saved says otherwise
+    if (saved.darkMode === false) {
+      document.body.classList.remove('dark');
+      themeToggle.textContent = '☀️';
     }
-    function renderGroupButtons() {
-      groupRowEl.querySelectorAll('.group-btn').forEach(b => {
-        b.classList.toggle('active', b.dataset.value === String(selectedGroup));
-      });
-    }
-
-    /* ---------- Load saved options (but NOT selectedGroup) ---------- */
-    const savedOptions = JSON.parse(localStorage.getItem('attendanceOptions') || '{}');
-    if ('sortByFirst'  in savedOptions) optSortByFirst.checked  = savedOptions.sortByFirst;
-    if ('groupByFirst' in savedOptions) optGroupByFirst.checked = savedOptions.groupByFirst;
-    if ('groupByGroup' in savedOptions) optGroupByGroup.checked = savedOptions.groupByGroup;
-    if ('darkMode'     in savedOptions) {
-      optDarkMode.checked = savedOptions.darkMode;
-      document.body.classList.toggle('dark', optDarkMode.checked);
-    }
-    makeGroupButtons(); // build once; Safari-safe
+    // Group-by mode default = "Group Number"
+    let groupByMode = saved.groupByMode || 'group'; // 'group' | 'alphaLast' | 'alphaFirst'
+    setGroupByButtons(groupByMode);
 
     function saveOptions() {
       const opts = {
-        sortByFirst:  optSortByFirst.checked,
-        groupByFirst: optGroupByFirst.checked,
-        groupByGroup: optGroupByGroup.checked,
-        darkMode:     optDarkMode.checked
-        // intentionally not persisting selectedGroup so it resets to 'none' on load
+        darkMode: document.body.classList.contains('dark'),
+        groupByMode
       };
       localStorage.setItem('attendanceOptions', JSON.stringify(opts));
     }
 
-    // Mutually exclusive grouping toggles
-    optGroupByGroup.addEventListener('change', () => {
-      if (optGroupByGroup.checked) optGroupByFirst.checked = false;
-      saveOptions(); render();
-    });
-    optGroupByFirst.addEventListener('change', () => {
-      if (optGroupByFirst.checked) optGroupByGroup.checked = false;
-      saveOptions(); render();
-    });
-
-    // Dark mode toggle
-    optDarkMode.addEventListener('change', () => {
-      document.body.classList.toggle('dark', optDarkMode.checked);
+    function setGroupByButtons(mode) {
+      groupByMode = mode;
+      byGroupBtn.classList.toggle('active', mode === 'group');
+      byGroupBtn.setAttribute('aria-selected', mode === 'group');
+      byAlphaLastBtn.classList.toggle('active', mode === 'alphaLast');
+      byAlphaLastBtn.setAttribute('aria-selected', mode === 'alphaLast');
+      byAlphaFirstBtn.classList.toggle('active', mode === 'alphaFirst');
+      byAlphaFirstBtn.setAttribute('aria-selected', mode === 'alphaFirst');
       saveOptions();
-    });
-    optSortByFirst.addEventListener('change', () => { saveOptions(); render(); });
+      render();
+    }
+
+    byGroupBtn.addEventListener('click', () => setGroupByButtons('group'));
+    byAlphaLastBtn.addEventListener('click', () => setGroupByButtons('alphaLast'));
+    byAlphaFirstBtn.addEventListener('click', () => setGroupByButtons('alphaFirst'));
+
+    /* ---------- Group Number buttons: default 'Do Not Change' every load ---------- */
+    const groupOptions = ['none', 1,2,3,4,5,6,7,8,9,10];
+    let selectedGroup = 'none'; // ALWAYS default on load; kept during scrolling
+
+    function buildGroupButtons() {
+      groupRowEl.innerHTML = '';
+      // Do Not Change (wide)
+      const noneBtn = document.createElement('button');
+      noneBtn.type = 'button';
+      noneBtn.className = 'group-btn';
+      noneBtn.dataset.value = 'none';
+      noneBtn.textContent = 'Do Not Change';
+      noneBtn.addEventListener('click', () => { selectedGroup = 'none'; markGroupButtons(); }, { passive: true });
+      groupRowEl.appendChild(noneBtn);
+
+      // 1..10 (small, square)
+      for (let i = 1; i <= 10; i++) {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'group-btn num-btn';
+        b.dataset.value = String(i);
+        b.textContent = String(i);
+        b.addEventListener('click', () => { selectedGroup = String(i); markGroupButtons(); }, { passive: true });
+        groupRowEl.appendChild(b);
+      }
+      markGroupButtons();
+    }
+    function markGroupButtons() {
+      groupRowEl.querySelectorAll('.group-btn').forEach(b => {
+        b.classList.toggle('active', b.dataset.value === selectedGroup);
+      });
+    }
 
     /* ---------- Data & iOS-safe render state ---------- */
-    // Expecting backend GET to return { ok:true, rows:[{name, group}] }.
-    // If it returns names only, we'll synthesize empty groups.
-    let originalRows = [];        // [{name, group}]
-    let selectedSet  = new Set(); // preserves checked names across renders
-    let lastColCount = null;      // avoid unnecessary re-renders on iOS "resize while scrolling"
+    let originalRows = []; // [{name, group}]
+    let selectedSet  = new Set();
+    let lastColCount = null;
 
-    // Load and render
-    loadNames();
+    // Load names + groups
+    loadRows();
 
-    async function loadNames() {
+    async function loadRows() {
       try {
         const res = await fetch(WEB_APP_URL, { method: 'GET' });
         const data = await res.json();
         if (!data.ok) throw new Error(data.error || 'Failed to load');
         if (Array.isArray(data.rows)) {
-          originalRows = data.rows.map(r => ({ name: r.name, group: (r.group || '').toString().trim() }));
+          originalRows = data.rows.map(r => ({
+            name: r.name,
+            group: (r.group == null ? '' : String(r.group)).trim()
+          }));
         } else if (Array.isArray(data.names)) {
+          // Fallback if server not updated: groups unknown
           originalRows = data.names.map(n => ({ name: n, group: '' }));
         } else {
           originalRows = [];
         }
         render();
       } catch (err) {
-        columnsEl.innerHTML = `<div class="card muted">Error loading names: ${escapeHtml(String(err))}</div>`;
+        columnsEl.innerHTML = `<div class="card muted">Error loading: ${escapeHtml(String(err))}</div>`;
       }
     }
 
-    // Only re-render on resize if the column count changed (prevents iOS checkbox resets)
+    // Build fixed UI bits once (Safari-safe)
+    buildGroupButtons();
+
+    // Only re-render list if col count actually changed (prevents iOS scroll-resize resets)
     window.addEventListener('resize', debounce(() => {
       const cc = getColumnCount();
       if (cc !== lastColCount) render();
     }, 100), { passive: true });
 
     /* ===================== Rendering ===================== */
-
     function captureSelection() {
       document.querySelectorAll('input.student-box').forEach(cb => {
         const name = cb.getAttribute('data-name');
@@ -338,35 +336,30 @@
     }
 
     function render() {
-      captureSelection(); // preserve current checks
+      captureSelection();
 
-      const byFirst   = optSortByFirst.checked;
-      const byLetter  = optGroupByFirst.checked;
-      const byGroup   = optGroupByGroup.checked;
-      const colCount  = getColumnCount();
+      const colCount = getColumnCount();
       lastColCount = colCount;
 
-      // Build normalized items
+      // Prepare items with display and grouping keys based on mode
       const items = originalRows.map(r => {
-        const display = byFirst ? toFirstLast(r.name) : r.name;
+        const display = (groupByMode === 'alphaFirst') ? toFirstLast(r.name) : r.name;
         const dispTrim = (display || '').trim();
-
-        // normalize group: numeric => canonical number string; empty => ''
+        const lastLetterKey = groupLetter(dispTrim); // used for alpha group modes
+        // normalize group: numbers => "1","2", ...; empty => ''
         const raw = (r.group || '').trim();
         const numMatch = raw.match(/^\d+$/);
         const groupNorm = raw === '' ? '' : (numMatch ? String(parseInt(raw, 10)) : raw);
-
         return {
           orig: r.name,
           display: dispTrim,
           sortKey: normalizeForSort(dispTrim),
-          letterKey: groupLetter(dispTrim),
-          groupRaw: raw,
-          groupNorm // '' means unknown
+          letterKey: lastLetterKey,
+          groupNorm // '' => unknown
         };
       });
 
-      // Sort by display name within groups (stable); group ordering handled in grouped renderers
+      // Sort list by display name (used inside groups)
       items.sort((a, b) => a.sortKey.localeCompare(b.sortKey));
 
       if (!items.length) {
@@ -374,72 +367,59 @@
         return;
       }
 
-      if (byGroup) {
+      if (groupByMode === 'group') {
         renderGroupedByGroup(items, colCount);
-      } else if (byLetter) {
-        renderGroupedByLetter(items, colCount);
       } else {
-        renderFlat(items, colCount);
-      }
-    }
-
-    function renderFlat(items, colCount) {
-      const n = items.length;
-      const perCol = Math.ceil(n / colCount);
-      columnsEl.innerHTML = '';
-      for (let c = 0; c < colCount; c++) {
-        const start = c * perCol;
-        const end = Math.min(start + perCol, n);
-        const col = document.createElement('div');
-        col.className = 'column';
-        for (const item of items.slice(start, end)) col.appendChild(studentRow(item));
-        columnsEl.appendChild(col);
+        renderGroupedByLetter(items, colCount);
       }
     }
 
     function renderGroupedByLetter(items, colCount) {
-      // Build letter groups in order of appearance (already name-sorted)
-      const groups = [];
-      let current = null, currentKey = null;
+      // Combine same letter together
+      const groupsMap = new Map();
       for (const it of items) {
-        if (currentKey !== it.letterKey) {
-          currentKey = it.letterKey;
-          current = { label: it.letterKey, items: [] };
-          groups.push(current);
-        }
-        current.items.push(it);
+        const key = it.letterKey;
+        if (!groupsMap.has(key)) groupsMap.set(key, []);
+        groupsMap.get(key).push(it);
       }
+      // Sort letter headers A→Z, then '#'
+      const keys = Array.from(groupsMap.keys()).sort((a, b) => {
+        if (a === '#') return 1;
+        if (b === '#') return -1;
+        return a.localeCompare(b);
+      });
+
+      const groups = keys.map(k => ({ label: k, items: groupsMap.get(k) }));
       renderGroupedColumns(groups, colCount);
     }
 
     function renderGroupedByGroup(items, colCount) {
-      // Combine everyone with the same group into one bucket
-      const map = new Map(); // key => array
+      // Bucket everyone with the same groupNorm
+      const groupsMap = new Map();
       for (const it of items) {
-        const key = it.groupNorm; // '' means unknown
-        if (!map.has(key)) map.set(key, []);
-        map.get(key).push(it);
+        const key = it.groupNorm; // '' => unknown
+        if (!groupsMap.has(key)) groupsMap.set(key, []);
+        groupsMap.get(key).push(it);
       }
 
-      // Sort groups: numeric ascending, then non-numeric alpha, then '' (unknown) last
-      const keys = Array.from(map.keys());
+      // Order: numeric groups ascending, then non-numeric alpha, then '' (unknown) last
+      const keys = Array.from(groupsMap.keys());
       const numeric = keys.filter(k => k !== '' && /^\d+$/.test(k)).map(k => parseInt(k, 10)).sort((a,b)=>a-b).map(n=>String(n));
       const alphas  = keys.filter(k => k !== '' && !/^\d+$/.test(k)).sort((a,b)=>a.localeCompare(b));
       const unknown = keys.includes('') ? [''] : [];
-
       const orderedKeys = [...numeric, ...alphas, ...unknown];
 
       const groups = orderedKeys.map(k => ({
         label: k === '' ? 'Group Unknown' : `Group ${k}`,
-        items: map.get(k)
+        items: groupsMap.get(k)
       }));
 
       renderGroupedColumns(groups, colCount);
     }
 
     function renderGroupedColumns(groups, colCount) {
-      // Distribute groups across columns without splitting
-      const totalItems = groups.reduce((sum,g)=>sum+g.items.length,0);
+      // Distribute whole groups across columns without splitting
+      const totalItems = groups.reduce((s,g)=>s+g.items.length,0);
       const targetPerCol = Math.ceil(totalItems / colCount);
       const cols = Array.from({ length: colCount }, () => []);
       let colIdx = 0, countInCol = 0;
@@ -452,14 +432,12 @@
                           ((countInCol + g.items.length) > targetPerCol) &&
                           (remainingGroups >= remainingCols);
         if (mustBreak && colIdx < colCount - 1) {
-          colIdx++;
-          countInCol = 0;
+          colIdx++; countInCol = 0;
         }
         cols[colIdx].push(g);
         countInCol += g.items.length;
       }
 
-      // Render
       columnsEl.innerHTML = '';
       for (let c = 0; c < colCount; c++) {
         const col = document.createElement('div');
@@ -522,6 +500,7 @@
 
     /* ===================== Submit ===================== */
     submitEl.addEventListener('click', async () => {
+      // Collect from our selection set (Safari-safe)
       const names = Array.from(selectedSet);
       if (!names.length) return setStatus('Please check at least one student.', true);
 
