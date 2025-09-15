@@ -63,13 +63,13 @@
     }
     .opt input[type="checkbox"] { width: 18px; height: 18px; margin: 0; accent-color: var(--accent); }
 
-    /* Group buttons (responsive, wraps, Do Not Change fits) */
+    /* Group buttons (responsive, wraps, "Do Not Change" fits) */
     .group-opt { display: flex; align-items: center; gap: 8px; width: 100%; }
     .group-label { font-weight: 600; white-space: nowrap; }
     .group-row {
       display: grid;
-      /* auto-fitting columns that wrap; min width ensures "Do Not Change" fits */
-      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+      /* auto-fit wraps to multiple lines; 140px ensures "Do Not Change" fits */
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
       gap: 8px;
       width: 100%;
     }
@@ -84,7 +84,7 @@
       user-select: none;
       font-weight: 700;
       transition: transform .05s ease, border-color .15s ease, background .15s ease;
-      white-space: nowrap; /* keep text on one line */
+      white-space: nowrap;
     }
     .group-btn:hover { border-color: var(--accent); }
     .group-btn.active {
@@ -105,7 +105,7 @@
       min-height: 40px;
     }
 
-    /* Spartan-green letter/group bubble headers */
+    /* Bubble headers */
     .group-header {
       display: flex;
       justify-content: center;
@@ -212,7 +212,7 @@
   </main>
 
   <script>
-    const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbzMxo_vrJzsYM9aFK9-l3ra4pu6k5bP8APA4pLXjW6dYK9w_Lf-bCWNUgVXqLQ4RZK7/exec';
+    const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbyoAZHt0ZPPfkDMcrXQ1MFtRmHjN-OBD5zFQwULCinj5iADO6LrfLu2EqboieqBGvjX/exec';
 
     const columnsEl = document.getElementById('columns');
     const statusEl  = document.getElementById('status');
@@ -227,9 +227,9 @@
 
     dateEl.textContent = new Date().toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
 
-    /* ---------- Group buttons: "Do Not Change" + 1..10 ---------- */
+    /* ---------- Group buttons: "Do Not Change" + 1..10 (default = none each load) ---------- */
     const groupOptions = ['none', 1,2,3,4,5,6,7,8,9,10];
-    let selectedGroup = 'none'; // default
+    let selectedGroup = 'none'; // ALWAYS default on load
 
     function makeGroupButtons() {
       groupRowEl.innerHTML = '';
@@ -242,7 +242,7 @@
         btn.addEventListener('click', () => {
           selectedGroup = String(val);
           renderGroupButtons();
-          saveOptions();
+          // note: we intentionally DO NOT persist selectedGroup between visits
         }, { passive: true });
         groupRowEl.appendChild(btn);
       });
@@ -254,18 +254,14 @@
       });
     }
 
-    /* ---------- Load saved options ---------- */
+    /* ---------- Load saved options (but NOT selectedGroup) ---------- */
     const savedOptions = JSON.parse(localStorage.getItem('attendanceOptions') || '{}');
-    if ('sortByFirst' in savedOptions)  optSortByFirst.checked  = savedOptions.sortByFirst;
+    if ('sortByFirst'  in savedOptions) optSortByFirst.checked  = savedOptions.sortByFirst;
     if ('groupByFirst' in savedOptions) optGroupByFirst.checked = savedOptions.groupByFirst;
     if ('groupByGroup' in savedOptions) optGroupByGroup.checked = savedOptions.groupByGroup;
-    if ('darkMode' in savedOptions) {
+    if ('darkMode'     in savedOptions) {
       optDarkMode.checked = savedOptions.darkMode;
       document.body.classList.toggle('dark', optDarkMode.checked);
-    }
-    if ('selectedGroup' in savedOptions &&
-        (savedOptions.selectedGroup === 'none' || (+savedOptions.selectedGroup >= 1 && +savedOptions.selectedGroup <= 10))) {
-      selectedGroup = String(savedOptions.selectedGroup);
     }
     makeGroupButtons(); // build once; Safari-safe
 
@@ -274,23 +270,19 @@
         sortByFirst:  optSortByFirst.checked,
         groupByFirst: optGroupByFirst.checked,
         groupByGroup: optGroupByGroup.checked,
-        darkMode:     optDarkMode.checked,
-        selectedGroup
+        darkMode:     optDarkMode.checked
+        // intentionally not persisting selectedGroup so it resets to 'none' on load
       };
       localStorage.setItem('attendanceOptions', JSON.stringify(opts));
     }
 
     // Mutually exclusive grouping toggles
     optGroupByGroup.addEventListener('change', () => {
-      if (optGroupByGroup.checked) {
-        optGroupByFirst.checked = false;
-      }
+      if (optGroupByGroup.checked) optGroupByFirst.checked = false;
       saveOptions(); render();
     });
     optGroupByFirst.addEventListener('change', () => {
-      if (optGroupByFirst.checked) {
-        optGroupByGroup.checked = false;
-      }
+      if (optGroupByFirst.checked) optGroupByGroup.checked = false;
       saveOptions(); render();
     });
 
@@ -302,6 +294,8 @@
     optSortByFirst.addEventListener('change', () => { saveOptions(); render(); });
 
     /* ---------- Data & iOS-safe render state ---------- */
+    // Expecting backend GET to return { ok:true, rows:[{name, group}] }.
+    // If it returns names only, we'll synthesize empty groups.
     let originalRows = [];        // [{name, group}]
     let selectedSet  = new Set(); // preserves checked names across renders
     let lastColCount = null;      // avoid unnecessary re-renders on iOS "resize while scrolling"
@@ -313,8 +307,7 @@
       try {
         const res = await fetch(WEB_APP_URL, { method: 'GET' });
         const data = await res.json();
-        if (!data.ok) throw new Error(data.error || 'Failed to load names');
-        // Backward-compat: if server only returns names, synthesize rows
+        if (!data.ok) throw new Error(data.error || 'Failed to load');
         if (Array.isArray(data.rows)) {
           originalRows = data.rows.map(r => ({ name: r.name, group: (r.group || '').toString().trim() }));
         } else if (Array.isArray(data.names)) {
@@ -357,14 +350,24 @@
       const items = originalRows.map(r => {
         const display = byFirst ? toFirstLast(r.name) : r.name;
         const dispTrim = (display || '').trim();
+
+        // normalize group: numeric => canonical number string; empty => ''
+        const raw = (r.group || '').trim();
+        const numMatch = raw.match(/^\d+$/);
+        const groupNorm = raw === '' ? '' : (numMatch ? String(parseInt(raw, 10)) : raw);
+
         return {
           orig: r.name,
           display: dispTrim,
           sortKey: normalizeForSort(dispTrim),
           letterKey: groupLetter(dispTrim),
-          groupKey: (r.group || '').toString().trim() || '—' // use em dash for empty groups
+          groupRaw: raw,
+          groupNorm // '' means unknown
         };
-      }).sort((a, b) => a.sortKey.localeCompare(b.sortKey));
+      });
+
+      // Sort by display name within groups (stable); group ordering handled in grouped renderers
+      items.sort((a, b) => a.sortKey.localeCompare(b.sortKey));
 
       if (!items.length) {
         columnsEl.innerHTML = `<div class="card muted">No names found in the sheet.</div>`;
@@ -372,9 +375,9 @@
       }
 
       if (byGroup) {
-        renderGroupedBy(items, colCount, 'groupKey');
+        renderGroupedByGroup(items, colCount);
       } else if (byLetter) {
-        renderGroupedBy(items, colCount, 'letterKey');
+        renderGroupedByLetter(items, colCount);
       } else {
         renderFlat(items, colCount);
       }
@@ -394,21 +397,49 @@
       }
     }
 
-    function renderGroupedBy(items, colCount, key) {
-      // Build whole groups (key is 'letterKey' or 'groupKey')
+    function renderGroupedByLetter(items, colCount) {
+      // Build letter groups in order of appearance (already name-sorted)
       const groups = [];
       let current = null, currentKey = null;
       for (const it of items) {
-        if (currentKey !== it[key]) {
-          currentKey = it[key];
-          current = { label: currentKey, items: [] };
+        if (currentKey !== it.letterKey) {
+          currentKey = it.letterKey;
+          current = { label: it.letterKey, items: [] };
           groups.push(current);
         }
         current.items.push(it);
       }
+      renderGroupedColumns(groups, colCount);
+    }
 
-      // Distribute groups without splitting
-      const totalItems = items.length;
+    function renderGroupedByGroup(items, colCount) {
+      // Combine everyone with the same group into one bucket
+      const map = new Map(); // key => array
+      for (const it of items) {
+        const key = it.groupNorm; // '' means unknown
+        if (!map.has(key)) map.set(key, []);
+        map.get(key).push(it);
+      }
+
+      // Sort groups: numeric ascending, then non-numeric alpha, then '' (unknown) last
+      const keys = Array.from(map.keys());
+      const numeric = keys.filter(k => k !== '' && /^\d+$/.test(k)).map(k => parseInt(k, 10)).sort((a,b)=>a-b).map(n=>String(n));
+      const alphas  = keys.filter(k => k !== '' && !/^\d+$/.test(k)).sort((a,b)=>a.localeCompare(b));
+      const unknown = keys.includes('') ? [''] : [];
+
+      const orderedKeys = [...numeric, ...alphas, ...unknown];
+
+      const groups = orderedKeys.map(k => ({
+        label: k === '' ? 'Group Unknown' : `Group ${k}`,
+        items: map.get(k)
+      }));
+
+      renderGroupedColumns(groups, colCount);
+    }
+
+    function renderGroupedColumns(groups, colCount) {
+      // Distribute groups across columns without splitting
+      const totalItems = groups.reduce((sum,g)=>sum+g.items.length,0);
       const targetPerCol = Math.ceil(totalItems / colCount);
       const cols = Array.from({ length: colCount }, () => []);
       let colIdx = 0, countInCol = 0;
@@ -428,7 +459,7 @@
         countInCol += g.items.length;
       }
 
-      // Render columns
+      // Render
       columnsEl.innerHTML = '';
       for (let c = 0; c < colCount; c++) {
         const col = document.createElement('div');
