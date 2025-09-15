@@ -193,18 +193,15 @@
       </div>
     </div>
 
-    <!-- Form wraps the columns + submit so Enter works anywhere -->
-    <form id="attForm" novalidate>
-      <div id="columns" class="columns" aria-live="polite" aria-busy="true">
-        <div class="card muted" id="loadingCard">Loading students…</div>
-      </div>
+    <div id="columns" class="columns" aria-live="polite">
+      <div class="card muted" id="loadingCard">Loading students…</div>
+    </div>
 
-      <!-- Full-width Submit -->
-      <div class="actions">
-        <button id="submit" type="submit">Submit</button>
-        <span id="status" class="status muted"></span>
-      </div>
-    </form>
+    <!-- Full-width Submit -->
+    <div class="actions">
+      <button id="submit">Submit</button>
+      <span id="status" class="status muted"></span>
+    </div>
 
     <div class="spacer"></div>
   </main>
@@ -212,16 +209,15 @@
   <script>
     document.addEventListener('DOMContentLoaded', () => {
       /* ======== CONFIG ======== */
-      const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbw6s4ExyRboGVoc--QAmMUlfEe70yyhJpmjxet8Y37zODmyK8B7jYGDyXR-5jq0aDt-/exec';
+      const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbz1GEBT0SuW_a8wBovvE-AeHG4JRuyBJhrotBUApUkygIZx7wwWXlgqUiB7OZsfMxg/exec';
 
       /* ======== DOM HOOKS ======== */
-      const formEl     = document.getElementById('attForm');
-      const columnsEl  = document.getElementById('columns');
-      const loadingCard= document.getElementById('loadingCard');
-      const statusEl   = document.getElementById('status');
-      const dateEl     = document.getElementById('date');
-      const submitEl   = document.getElementById('submit');
-      const themeToggle= document.getElementById('themeToggle');
+      const columnsEl   = document.getElementById('columns');
+      const loadingCard = document.getElementById('loadingCard');
+      const statusEl    = document.getElementById('status');
+      const dateEl      = document.getElementById('date');
+      const submitEl    = document.getElementById('submit');
+      const themeToggle = document.getElementById('themeToggle');
       const byGroupBtn      = document.getElementById('byGroup');
       const byAlphaLastBtn  = document.getElementById('byAlphaLast');
       const byAlphaFirstBtn = document.getElementById('byAlphaFirst');
@@ -231,6 +227,7 @@
       let originalRows = [];    // [{name, group}]
       let selectedSet  = new Set();
       let lastColCount = null;
+      let selectedGroup = 'none'; // Group Number picker (default each load)
       let isLoading = true;       // <-- controls "Loading…" visibility
 
       /* ======== UTIL ======== */
@@ -269,34 +266,11 @@
           return data;
         } finally { clearTimeout(id); }
       };
-      const sleep = (ms) => new Promise(r => setTimeout(r, ms));
-      const fetchJSONRetry = async (url, opts = {}, attempts = 3, baseDelay = 400) => {
-        let lastErr;
-        for (let i = 0; i < attempts; i++) {
-          try {
-            return await fetchJSONWithTimeout(url, opts, 10000);
-          } catch (e) {
-            lastErr = e;
-            if (i < attempts - 1) await sleep(baseDelay * (i + 1));
-          }
-        }
-        throw lastErr;
-      };
 
-      /* ======== DATE + THEME & OPTIONS ======== */
+      /* ======== DATE + THEME ======== */
       try { dateEl.textContent = new Date().toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }); } catch {}
       const saved = safeParse(localStorage.getItem('attendanceOptions') || '', {});
       if (saved.darkMode === false) { document.body.classList.remove('dark'); themeToggle.textContent = '☀️'; }
-
-      function saveOptions() {
-        const opts = {
-          darkMode: document.body.classList.contains('dark'),
-          groupByMode,
-          selectedGroup
-        };
-        try { localStorage.setItem('attendanceOptions', JSON.stringify(opts)); } catch {}
-      }
-
       themeToggle.addEventListener('click', () => {
         const isDark = document.body.classList.toggle('dark');
         themeToggle.textContent = isDark ? '🌙' : '☀️';
@@ -305,6 +279,13 @@
 
       /* ======== GROUP BY SEGMENTED CONTROL ======== */
       let groupByMode = saved.groupByMode || 'group'; // 'group' | 'alphaLast' | 'alphaFirst'
+      function saveOptions() {
+        const opts = {
+          darkMode: document.body.classList.contains('dark'),
+          groupByMode
+        };
+        try { localStorage.setItem('attendanceOptions', JSON.stringify(opts)); } catch {}
+      }
       function setGroupByButtons(mode) {
         groupByMode = mode;
         byGroupBtn.classList.toggle('active', mode === 'group');
@@ -322,8 +303,6 @@
       setGroupByButtons(groupByMode); // initialize
 
       /* ======== GROUP NUMBER BUTTONS ======== */
-      let selectedGroup = saved.selectedGroup || 'none'; // 'none' or '1'..'10'
-
       function buildGroupButtons() {
         groupRowEl.innerHTML = '';
         // Left cell: Do Not Change
@@ -355,15 +334,13 @@
         groupRowEl.querySelectorAll('.group-btn').forEach(b => {
           b.classList.toggle('active', b.dataset.value === selectedGroup);
         });
-        saveOptions();
       }
-      buildGroupButtons();
+      buildGroupButtons(); // build immediately
 
       /* ======== LOAD DATA ======== */
       async function loadRows() {
         try {
-          columnsEl.setAttribute('aria-busy', 'true');
-          const data = await fetchJSONRetry(WEB_APP_URL, { method: 'GET' }, 3, 400);
+          const data = await fetchJSONWithTimeout(WEB_APP_URL, { method: 'GET' }, 10000);
           if (!data || data.ok !== true) throw new Error(data && data.error ? data.error : 'Failed to load');
           if (Array.isArray(data.rows)) {
             originalRows = data.rows.map(r => ({
@@ -375,13 +352,11 @@
           } else {
             originalRows = [];
           }
-          isLoading = false; // data arrived
+          isLoading = false; // <-- data arrived
           render();
         } catch (err) {
-          isLoading = false;
+          isLoading = false; // <-- stop loading on error, too
           columnsEl.innerHTML = `<div class="card muted">Error loading students: ${escapeHtml(String(err.message || err))}</div>`;
-        } finally {
-          columnsEl.removeAttribute('aria-busy');
         }
       }
       loadRows();
@@ -390,7 +365,7 @@
       window.addEventListener('resize', debounce(() => {
         const cc = getColumnCount();
         if (cc !== lastColCount) render();
-      }, 150), { passive: true });
+      }, 100), { passive: true });
 
       /* ======== RENDERING ======== */
       function captureSelection() {
@@ -433,11 +408,14 @@
           return;
         }
 
-        // Build ordered groups
+        // Build ordered groups (PRESERVE GROUP ORDER)
         const groups = (groupByMode === 'group') ? makeGroupsByGroup(items)
                                                  : makeGroupsByLetter(items);
 
+        // Distribute sequentially across columns without splitting groups,
+        // preserving overall order (no reordering for balance).
         renderSequentialGroups(groups, colCount);
+
         lastColCount = colCount;
       }
 
@@ -448,6 +426,7 @@
           if (!map.has(key)) map.set(key, []);
           map.get(key).push(it);
         }
+        // Order A→Z, then '#'
         const keys = Array.from(map.keys()).sort((a, b) => {
           if (a === '#') return 1;
           if (b === '#') return -1;
@@ -484,7 +463,9 @@
         const totalItems = groups.reduce((s,g)=>s+g.items.length,0);
         const targetPerCol = Math.ceil(totalItems / colCount);
 
-        const colsGroups = Array.from({ length: colCount }, () => []);
+        // Build columns by walking groups in order, moving to next column
+        // when adding the next whole group would exceed target (and we have columns left).
+        const cols = Array.from({ length: colCount }, () => []);
         let colIdx = 0, countInCol = 0;
 
         for (let i = 0; i < groups.length; i++) {
@@ -499,54 +480,44 @@
             colIdx++;
             countInCol = 0;
           }
-          colsGroups[colIdx].push(g);
+          cols[colIdx].push(g);
           countInCol += g.items.length;
         }
 
-        // Render with DocumentFragments
+        // Render
         columnsEl.innerHTML = '';
         for (let c = 0; c < colCount; c++) {
           const col = document.createElement('div');
           col.className = 'column';
-          const frag = document.createDocumentFragment();
-          for (const g of colsGroups[c]) {
+          for (const g of cols[c]) {
             const header = document.createElement('div');
             header.className = 'group-header';
             header.textContent = g.label;
-            frag.appendChild(header);
-            for (const item of g.items) frag.appendChild(studentRow(item));
+            col.appendChild(header);
+            for (const item of g.items) col.appendChild(studentRow(item));
           }
-          col.appendChild(frag);
           columnsEl.appendChild(col);
         }
       }
 
       function studentRow(item) {
-        const label = document.createElement('label');
-        label.className = 'student';
-
-        const cb = document.createElement('input');
-        cb.type = 'checkbox';
-        cb.className = 'student-box';
-        cb.setAttribute('data-name', item.orig);
-        cb.checked = selectedSet.has(item.orig);
-
-        const span = document.createElement('span');
-        span.textContent = item.display;
-
+        const row = document.createElement('label');
+        row.className = 'student';
+        const checkedAttr = selectedSet.has(item.orig) ? 'checked' : '';
+        row.innerHTML = `
+          <input class="student-box" type="checkbox" data-name="${escapeHtml(item.orig)}" ${checkedAttr} />
+          <span>${escapeHtml(item.display)}</span>
+        `;
+        const cb = row.querySelector('input.student-box');
         cb.addEventListener('change', () => {
           const name = cb.getAttribute('data-name');
           if (cb.checked) selectedSet.add(name); else selectedSet.delete(name);
         }, { passive: true });
-
-        label.append(cb, span);
-        return label;
+        return row;
       }
 
-      /* ======== SUBMIT (form) ======== */
-      formEl.addEventListener('submit', async (ev) => {
-        ev.preventDefault();
-
+      /* ======== SUBMIT ======== */
+      submitEl.addEventListener('click', async () => {
         const names = Array.from(selectedSet);
         if (!names.length) return setStatus('Please check at least one student.', true);
 
@@ -570,14 +541,12 @@
           selectedSet.clear();
           document.querySelectorAll('input.student-box').forEach(cb => cb.checked = false);
 
-          // Prefer concise counts; include names only if a few
-          const uc = data.updatedCount ?? (data.updated || []).length;
-          const gc = data.groupedCount ?? (data.grouped || []).length;
-          const mc = data.missingCount ?? (data.missing || []).length;
-
-          let msg = `Saved. ${uc} attendance updated.`;
-          if (data.groupApplied) msg += ` Group set to ${data.groupApplied} for ${gc}.`;
-          if (mc) msg += ` Not found: ${(data.missing || []).slice(0, 5).join(', ')}${(mc > 5 ? ` (+${mc - 5} more)` : '')}.`;
+          const updated = (data.updated || []).join(', ');
+          const grouped = (data.grouped || []).join(', ');
+          const missing = (data.missing || []);
+          let msg = `Saved. Updated attendance: ${updated || '—'}.`;
+          if (data.groupApplied) msg += ` Set Group=${data.groupApplied} for: ${grouped || '—'}.`;
+          if (missing.length) msg += ` Not found: ${missing.join(', ')}.`;
           setStatus(msg);
         } catch (err) {
           setStatus('Error: ' + String(err.message || err), true);
