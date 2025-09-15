@@ -1,548 +1,548 @@
 <!doctype html>
 <html lang="en">
-<head>
-  <meta charset="utf-8" />
-  <title>Attendance</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <style>
-    /* Light theme defaults */
-    body {
-      --bg: #f6f8fa;
-      --panel: #ffffff;
-      --muted: #57606a;
-      --text: #24292f;
-      --border: #d0d7de;
-      --accent: #0969da;
-      --danger: #cf222e;
-      --chip: #f6f8fa;
-      --chip-hover: #f0f1f2;
-      --msu: #115740;           /* Spartan Green */
-      --msu-contrast: #ffffff;
-    }
-    /* Dark theme overrides */
-    body.dark {
-      --bg: #0d1117;
-      --panel: #161b22;
-      --muted: #8b949e;
-      --text: #c9d1d9;
-      --border: #30363d;
-      --accent: #58a6ff;
-      --danger: #ff7b72;
-      --chip: #0e1520;
-      --chip-hover: #0f1a28;
-      --msu: #115740;
-      --msu-contrast: #ffffff;
-    }
-
-    * { box-sizing: border-box; }
-    html, body { height: 100%; margin: 0; }
-    body {
-      background: var(--bg);
-      color: var(--text);
-      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
-      line-height: 1.5;
-      display: flex;
-      justify-content: center;
-    }
-    main {
-      width: 100%;
-      max-width: 980px;
-      padding: 24px 16px;
-    }
-    h1 { font-size: 1.35rem; margin: 0; }
-    .muted { color: var(--muted); }
-
-    .card { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 12px; }
-
-    /* Header with date + theme toggle on right */
-    .header {
-      display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 8px;
-    }
-    .right {
-      display: inline-flex; align-items: center; gap: 8px;
-      color: var(--muted);
-    }
-    .theme-toggle {
-      display: inline-flex; align-items: center; justify-content: center;
-      width: 36px; height: 36px; border-radius: 10px; border: 1px solid var(--border);
-      background: var(--panel); cursor: pointer; font-size: 18px;
-    }
-
-    /* Controls rows */
-    .control-row { display: flex; flex-wrap: wrap; gap: 12px; margin: 12px 0 8px; align-items: center; }
-    .label { font-weight: 700; white-space: nowrap; }
-
-    /* Segmented control for "Group by" */
-    .seg {
-      display: inline-flex; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; background: var(--panel);
-    }
-    .seg button {
-      border: 0; background: transparent; padding: .5rem .8rem; cursor: pointer; font-weight: 600;
-    }
-    .seg button + button { border-left: 1px solid var(--border); }
-    .seg button.active { background: var(--msu); color: var(--msu-contrast); }
-
-    /* Group Number picker */
-    .group-opt { display: flex; align-items: center; gap: 10px; width: 100%; }
-    .group-row {
-      display: grid;
-      grid-template-columns: minmax(160px, 2fr) repeat(auto-fit, minmax(40px, 1fr));
-      gap: 8px; width: 100%;
-    }
-    /* "Do Not Change" stays wide */
-    .group-btn {
-      border: 1px solid var(--border); background: var(--panel); color: var(--text);
-      border-radius: 10px; cursor: pointer; user-select: none; font-weight: 700;
-      transition: transform .05s ease, border-color .15s ease, background .15s ease;
-      white-space: nowrap; text-align: center;
-      padding: .55rem .7rem;
-    }
-    .group-btn:hover { border-color: var(--accent); }
-    .group-btn.active { background: var(--msu); color: var(--msu-contrast); border-color: var(--msu); transform: translateY(-1px); }
-
-    /* Numeric buttons: square, small */
-    .num-btn {
-      padding: 0;        /* we’ll size via box */
-      width: 40px;       /* square buttons */
-      height: 40px;
-      display: inline-flex; align-items: center; justify-content: center;
-      font-weight: 800;
-    }
-
-    /* Columns container */
-    .columns { display: grid; grid-template-columns: 1fr; gap: 12px; margin: 12px 0; }
-    @media (min-width: 640px) { .columns { grid-template-columns: 1fr 1fr; } }
-    @media (min-width: 960px) { .columns { grid-template-columns: 1fr 1fr 1fr; } }
-
-    .column {
-      display: flex; flex-direction: column; gap: 10px; padding: 10px;
-      background: var(--panel); border: 1px solid var(--border); border-radius: 12px;
-      min-height: 40px;
-    }
-
-    /* Bubble headers */
-    .group-header {
-      display: flex; justify-content: center; align-items: center;
-      font-weight: 900; font-size: 1.35rem; letter-spacing: .08em; text-transform: uppercase;
-      color: var(--msu-contrast); background: var(--msu);
-      border: 1px solid rgba(0,0,0,0.15); border-radius: 999px; padding: .55rem 1.1rem;
-      margin: .2rem 0 .2rem; box-shadow: 0 2px 6px rgba(0,0,0,0.25); text-align: center;
-    }
-
-    label.student {
-      display: flex; align-items: center; gap: .7rem;
-      padding: .8rem; background: var(--chip); border: 1px solid var(--border); border-radius: 10px;
-      cursor: pointer; transition: border-color .15s ease, background .15s ease;
-    }
-    label.student:hover { border-color: #3b82f6; background: var(--chip-hover); }
-    input[type="checkbox"].student-box { width: 20px; height: 20px; margin: 0; accent-color: var(--accent); }
-
-    /* Full-width Submit */
-    .actions { margin-top: 12px; }
-    .actions button {
-      display: block; width: 100%; padding: 1.1rem 1.2rem;
-      border: 1px solid var(--border); border-radius: 12px; background: var(--accent); color: white;
-      font-weight: 900; font-size: 1.15rem; letter-spacing: .06em; text-transform: uppercase; cursor: pointer;
-    }
-    .actions button:disabled { opacity: .6; cursor: not-allowed; }
-    .status { display: block; margin-top: .6rem; min-height: 1.2rem; }
-    .status.error { color: var(--danger); }
-
-    /* Spacer ensures scroll past the button */
-    .spacer { height: 220px; }
-  </style>
-</head>
-<body class="dark">
-  <main>
-    <div class="header">
-      <h1>Attendance</h1>
-      <div class="right">
-        <span id="date" class="muted"></span>
-        <button id="themeToggle" class="theme-toggle" aria-label="Toggle dark mode" title="Toggle dark mode">🌙</button>
-      </div>
-    </div>
-
-    <!-- Group by segmented control -->
-    <div class="control-row">
-      <span class="label">Group by</span>
-      <div class="seg" role="tablist" aria-label="Group by">
-        <button id="byGroup" class="active" role="tab" aria-selected="true">Group Number</button>
-        <button id="byAlphaLast" role="tab" aria-selected="false">Alphabetical (Last Name)</button>
-        <button id="byAlphaFirst" role="tab" aria-selected="false">Alphabetical (First Name)</button>
-      </div>
-    </div>
-
-    <!-- Group Number picker -->
-    <div class="control-row card">
-      <div class="group-opt">
-        <span class="label">Group Number</span>
-        <div id="groupRow" class="group-row"></div>
-      </div>
-    </div>
-
-    <div id="columns" class="columns" aria-live="polite">
-      <div class="card muted">Loading students…</div>
-    </div>
-
-    <!-- Full-width Submit -->
-    <div class="actions">
-      <button id="submit">Submit</button>
-      <span id="status" class="status muted"></span>
-    </div>
-
-    <div class="spacer"></div>
-  </main>
-
-  <script>
-    const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbyoAZHt0ZPPfkDMcrXQ1MFtRmHjN-OBD5zFQwULCinj5iADO6LrfLu2EqboieqBGvjX/exec';
-
-    const columnsEl = document.getElementById('columns');
-    const statusEl  = document.getElementById('status');
-    const dateEl    = document.getElementById('date');
-    const submitEl  = document.getElementById('submit');
-    const themeToggle = document.getElementById('themeToggle');
-
-    // Group-by segmented buttons
-    const byGroupBtn     = document.getElementById('byGroup');
-    const byAlphaLastBtn = document.getElementById('byAlphaLast');
-    const byAlphaFirstBtn= document.getElementById('byAlphaFirst');
-
-    // Group Number picker row container
-    const groupRowEl = document.getElementById('groupRow');
-
-    // Date + theme
-    dateEl.textContent = new Date().toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
-    themeToggle.addEventListener('click', () => {
-      const isDark = document.body.classList.toggle('dark');
-      themeToggle.textContent = isDark ? '🌙' : '☀️';
-      // persist only dark mode + group-by mode
-      saveOptions();
-    });
-
-    // === Persisted options (NOT the selected group number) ===
-    const saved = JSON.parse(localStorage.getItem('attendanceOptions') || '{}');
-    // Dark mode default ON unless saved says otherwise
-    if (saved.darkMode === false) {
-      document.body.classList.remove('dark');
-      themeToggle.textContent = '☀️';
-    }
-    // Group-by mode default = "Group Number"
-    let groupByMode = saved.groupByMode || 'group'; // 'group' | 'alphaLast' | 'alphaFirst'
-    setGroupByButtons(groupByMode);
-
-    function saveOptions() {
-      const opts = {
-        darkMode: document.body.classList.contains('dark'),
-        groupByMode
-      };
-      localStorage.setItem('attendanceOptions', JSON.stringify(opts));
-    }
-
-    function setGroupByButtons(mode) {
-      groupByMode = mode;
-      byGroupBtn.classList.toggle('active', mode === 'group');
-      byGroupBtn.setAttribute('aria-selected', mode === 'group');
-      byAlphaLastBtn.classList.toggle('active', mode === 'alphaLast');
-      byAlphaLastBtn.setAttribute('aria-selected', mode === 'alphaLast');
-      byAlphaFirstBtn.classList.toggle('active', mode === 'alphaFirst');
-      byAlphaFirstBtn.setAttribute('aria-selected', mode === 'alphaFirst');
-      saveOptions();
-      render();
-    }
-
-    byGroupBtn.addEventListener('click', () => setGroupByButtons('group'));
-    byAlphaLastBtn.addEventListener('click', () => setGroupByButtons('alphaLast'));
-    byAlphaFirstBtn.addEventListener('click', () => setGroupByButtons('alphaFirst'));
-
-    /* ---------- Group Number buttons: default 'Do Not Change' every load ---------- */
-    const groupOptions = ['none', 1,2,3,4,5,6,7,8,9,10];
-    let selectedGroup = 'none'; // ALWAYS default on load; kept during scrolling
-
-    function buildGroupButtons() {
-      groupRowEl.innerHTML = '';
-      // Do Not Change (wide)
-      const noneBtn = document.createElement('button');
-      noneBtn.type = 'button';
-      noneBtn.className = 'group-btn';
-      noneBtn.dataset.value = 'none';
-      noneBtn.textContent = 'Do Not Change';
-      noneBtn.addEventListener('click', () => { selectedGroup = 'none'; markGroupButtons(); }, { passive: true });
-      groupRowEl.appendChild(noneBtn);
-
-      // 1..10 (small, square)
-      for (let i = 1; i <= 10; i++) {
-        const b = document.createElement('button');
-        b.type = 'button';
-        b.className = 'group-btn num-btn';
-        b.dataset.value = String(i);
-        b.textContent = String(i);
-        b.addEventListener('click', () => { selectedGroup = String(i); markGroupButtons(); }, { passive: true });
-        groupRowEl.appendChild(b);
+  <head>
+    <meta charset="utf-8" />
+    <title>Attendance</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style>
+      /* Light theme defaults */
+      body {
+        --bg: #f6f8fa;
+        --panel: #ffffff;
+        --muted: #57606a;
+        --text: #24292f;
+        --border: #d0d7de;
+        --accent: #0969da;
+        --danger: #cf222e;
+        --chip: #f6f8fa;
+        --chip-hover: #f0f1f2;
+        --msu: #115740;           /* Spartan Green */
+        --msu-contrast: #ffffff;
       }
-      markGroupButtons();
-    }
-    function markGroupButtons() {
-      groupRowEl.querySelectorAll('.group-btn').forEach(b => {
-        b.classList.toggle('active', b.dataset.value === selectedGroup);
-      });
-    }
-
-    /* ---------- Data & iOS-safe render state ---------- */
-    let originalRows = []; // [{name, group}]
-    let selectedSet  = new Set();
-    let lastColCount = null;
-
-    // Load names + groups
-    loadRows();
-
-    async function loadRows() {
-      try {
-        const res = await fetch(WEB_APP_URL, { method: 'GET' });
-        const data = await res.json();
-        if (!data.ok) throw new Error(data.error || 'Failed to load');
-        if (Array.isArray(data.rows)) {
-          originalRows = data.rows.map(r => ({
-            name: r.name,
-            group: (r.group == null ? '' : String(r.group)).trim()
-          }));
-        } else if (Array.isArray(data.names)) {
-          // Fallback if server not updated: groups unknown
-          originalRows = data.names.map(n => ({ name: n, group: '' }));
-        } else {
-          originalRows = [];
-        }
-        render();
-      } catch (err) {
-        columnsEl.innerHTML = `<div class="card muted">Error loading: ${escapeHtml(String(err))}</div>`;
+      /* Dark theme overrides */
+      body.dark {
+        --bg: #0d1117;
+        --panel: #161b22;
+        --muted: #8b949e;
+        --text: #c9d1d9;
+        --border: #30363d;
+        --accent: #58a6ff;
+        --danger: #ff7b72;
+        --chip: #0e1520;
+        --chip-hover: #0f1a28;
+        --msu: #115740;
+        --msu-contrast: #ffffff;
       }
-    }
 
-    // Build fixed UI bits once (Safari-safe)
-    buildGroupButtons();
+      * { box-sizing: border-box; }
+      html, body { height: 100%; margin: 0; }
+      body {
+        background: var(--bg);
+        color: var(--text);
+        font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+        line-height: 1.5;
+        display: flex;
+        justify-content: center;
+      }
+      main {
+        width: 100%;
+        max-width: 980px;
+        padding: 24px 16px;
+      }
+      h1 { font-size: 1.35rem; margin: 0; }
+      .muted { color: var(--muted); }
 
-    // Only re-render list if col count actually changed (prevents iOS scroll-resize resets)
-    window.addEventListener('resize', debounce(() => {
-      const cc = getColumnCount();
-      if (cc !== lastColCount) render();
-    }, 100), { passive: true });
+      .card { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 12px; }
 
-    /* ===================== Rendering ===================== */
-    function captureSelection() {
-      document.querySelectorAll('input.student-box').forEach(cb => {
-        const name = cb.getAttribute('data-name');
-        if (!name) return;
-        if (cb.checked) selectedSet.add(name); else selectedSet.delete(name);
+      /* Header with date + theme toggle on right */
+      .header {
+        display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 8px;
+      }
+      .right {
+        display: inline-flex; align-items: center; gap: 8px;
+        color: var(--muted);
+      }
+      .theme-toggle {
+        display: inline-flex; align-items: center; justify-content: center;
+        width: 36px; height: 36px; border-radius: 10px; border: 1px solid var(--border);
+        background: var(--panel); cursor: pointer; font-size: 18px;
+      }
+
+      /* Controls rows */
+      .control-row { display: flex; flex-wrap: wrap; gap: 12px; margin: 12px 0 8px; align-items: center; }
+      .label { font-weight: 700; white-space: nowrap; }
+
+      /* Segmented control for "Group by" */
+      .seg {
+        display: inline-flex; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; background: var(--panel);
+      }
+      .seg button {
+        border: 0; background: transparent; padding: .5rem .8rem; cursor: pointer; font-weight: 600;
+      }
+      .seg button + button { border-left: 1px solid var(--border); }
+      .seg button.active { background: var(--msu); color: var(--msu-contrast); }
+
+      /* Group Number picker */
+      .group-opt { display: flex; align-items: center; gap: 10px; width: 100%; }
+      .group-row {
+        display: grid;
+        grid-template-columns: minmax(160px, 2fr) repeat(auto-fit, minmax(40px, 1fr));
+        gap: 8px; width: 100%;
+      }
+      /* "Do Not Change" stays wide */
+      .group-btn {
+        border: 1px solid var(--border); background: var(--panel); color: var(--text);
+        border-radius: 10px; cursor: pointer; user-select: none; font-weight: 700;
+        transition: transform .05s ease, border-color .15s ease, background .15s ease;
+        white-space: nowrap; text-align: center;
+        padding: .55rem .7rem;
+      }
+      .group-btn:hover { border-color: var(--accent); }
+      .group-btn.active { background: var(--msu); color: var(--msu-contrast); border-color: var(--msu); transform: translateY(-1px); }
+
+      /* Numeric buttons: square, small */
+      .num-btn {
+        padding: 0;        /* we’ll size via box */
+        width: 40px;       /* square buttons */
+        height: 40px;
+        display: inline-flex; align-items: center; justify-content: center;
+        font-weight: 800;
+      }
+
+      /* Columns container */
+      .columns { display: grid; grid-template-columns: 1fr; gap: 12px; margin: 12px 0; }
+      @media (min-width: 640px) { .columns { grid-template-columns: 1fr 1fr; } }
+      @media (min-width: 960px) { .columns { grid-template-columns: 1fr 1fr 1fr; } }
+
+      .column {
+        display: flex; flex-direction: column; gap: 10px; padding: 10px;
+        background: var(--panel); border: 1px solid var(--border); border-radius: 12px;
+        min-height: 40px;
+      }
+
+      /* Bubble headers */
+      .group-header {
+        display: flex; justify-content: center; align-items: center;
+        font-weight: 900; font-size: 1.35rem; letter-spacing: .08em; text-transform: uppercase;
+        color: var(--msu-contrast); background: var(--msu);
+        border: 1px solid rgba(0,0,0,0.15); border-radius: 999px; padding: .55rem 1.1rem;
+        margin: .2rem 0 .2rem; box-shadow: 0 2px 6px rgba(0,0,0,0.25); text-align: center;
+      }
+
+      label.student {
+        display: flex; align-items: center; gap: .7rem;
+        padding: .8rem; background: var(--chip); border: 1px solid var(--border); border-radius: 10px;
+        cursor: pointer; transition: border-color .15s ease, background .15s ease;
+      }
+      label.student:hover { border-color: #3b82f6; background: var(--chip-hover); }
+      input[type="checkbox"].student-box { width: 20px; height: 20px; margin: 0; accent-color: var(--accent); }
+
+      /* Full-width Submit */
+      .actions { margin-top: 12px; }
+      .actions button {
+        display: block; width: 100%; padding: 1.1rem 1.2rem;
+        border: 1px solid var(--border); border-radius: 12px; background: var(--accent); color: white;
+        font-weight: 900; font-size: 1.15rem; letter-spacing: .06em; text-transform: uppercase; cursor: pointer;
+      }
+      .actions button:disabled { opacity: .6; cursor: not-allowed; }
+      .status { display: block; margin-top: .6rem; min-height: 1.2rem; }
+      .status.error { color: var(--danger); }
+
+      /* Spacer ensures scroll past the button */
+      .spacer { height: 220px; }
+    </style>
+  </head>
+  <body class="dark">
+    <main>
+      <div class="header">
+        <h1>Attendance</h1>
+        <div class="right">
+          <span id="date" class="muted"></span>
+          <button id="themeToggle" class="theme-toggle" aria-label="Toggle dark mode" title="Toggle dark mode">🌙</button>
+        </div>
+      </div>
+
+      <!-- Group by segmented control -->
+      <div class="control-row">
+        <span class="label">Group by</span>
+        <div class="seg" role="tablist" aria-label="Group by">
+          <button id="byGroup" class="active" role="tab" aria-selected="true">Group Number</button>
+          <button id="byAlphaLast" role="tab" aria-selected="false">Alphabetical (Last Name)</button>
+          <button id="byAlphaFirst" role="tab" aria-selected="false">Alphabetical (First Name)</button>
+        </div>
+      </div>
+
+      <!-- Group Number picker -->
+      <div class="control-row card">
+        <div class="group-opt">
+          <span class="label">Group Number</span>
+          <div id="groupRow" class="group-row"></div>
+        </div>
+      </div>
+
+      <div id="columns" class="columns" aria-live="polite">
+        <div class="card muted">Loading students…</div>
+      </div>
+
+      <!-- Full-width Submit -->
+      <div class="actions">
+        <button id="submit">Submit</button>
+        <span id="status" class="status muted"></span>
+      </div>
+
+      <div class="spacer"></div>
+    </main>
+
+    <script>
+      const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbyoAZHt0ZPPfkDMcrXQ1MFtRmHjN-OBD5zFQwULCinj5iADO6LrfLu2EqboieqBGvjX/exec';
+
+      const columnsEl = document.getElementById('columns');
+      const statusEl  = document.getElementById('status');
+      const dateEl    = document.getElementById('date');
+      const submitEl  = document.getElementById('submit');
+      const themeToggle = document.getElementById('themeToggle');
+
+      // Group-by segmented buttons
+      const byGroupBtn     = document.getElementById('byGroup');
+      const byAlphaLastBtn = document.getElementById('byAlphaLast');
+      const byAlphaFirstBtn= document.getElementById('byAlphaFirst');
+
+      // Group Number picker row container
+      const groupRowEl = document.getElementById('groupRow');
+
+      // Date + theme
+      dateEl.textContent = new Date().toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+      themeToggle.addEventListener('click', () => {
+        const isDark = document.body.classList.toggle('dark');
+        themeToggle.textContent = isDark ? '🌙' : '☀️';
+        // persist only dark mode + group-by mode
+        saveOptions();
       });
-    }
 
-    function render() {
-      captureSelection();
+      // === Persisted options (NOT the selected group number) ===
+      const saved = JSON.parse(localStorage.getItem('attendanceOptions') || '{}');
+      // Dark mode default ON unless saved says otherwise
+      if (saved.darkMode === false) {
+        document.body.classList.remove('dark');
+        themeToggle.textContent = '☀️';
+      }
+      // Group-by mode default = "Group Number"
+      let groupByMode = saved.groupByMode || 'group'; // 'group' | 'alphaLast' | 'alphaFirst'
+      setGroupByButtons(groupByMode);
 
-      const colCount = getColumnCount();
-      lastColCount = colCount;
-
-      // Prepare items with display and grouping keys based on mode
-      const items = originalRows.map(r => {
-        const display = (groupByMode === 'alphaFirst') ? toFirstLast(r.name) : r.name;
-        const dispTrim = (display || '').trim();
-        const lastLetterKey = groupLetter(dispTrim); // used for alpha group modes
-        // normalize group: numbers => "1","2", ...; empty => ''
-        const raw = (r.group || '').trim();
-        const numMatch = raw.match(/^\d+$/);
-        const groupNorm = raw === '' ? '' : (numMatch ? String(parseInt(raw, 10)) : raw);
-        return {
-          orig: r.name,
-          display: dispTrim,
-          sortKey: normalizeForSort(dispTrim),
-          letterKey: lastLetterKey,
-          groupNorm // '' => unknown
+      function saveOptions() {
+        const opts = {
+          darkMode: document.body.classList.contains('dark'),
+          groupByMode
         };
-      });
-
-      // Sort list by display name (used inside groups)
-      items.sort((a, b) => a.sortKey.localeCompare(b.sortKey));
-
-      if (!items.length) {
-        columnsEl.innerHTML = `<div class="card muted">No names found in the sheet.</div>`;
-        return;
+        localStorage.setItem('attendanceOptions', JSON.stringify(opts));
       }
 
-      if (groupByMode === 'group') {
-        renderGroupedByGroup(items, colCount);
-      } else {
-        renderGroupedByLetter(items, colCount);
-      }
-    }
-
-    function renderGroupedByLetter(items, colCount) {
-      // Combine same letter together
-      const groupsMap = new Map();
-      for (const it of items) {
-        const key = it.letterKey;
-        if (!groupsMap.has(key)) groupsMap.set(key, []);
-        groupsMap.get(key).push(it);
-      }
-      // Sort letter headers A→Z, then '#'
-      const keys = Array.from(groupsMap.keys()).sort((a, b) => {
-        if (a === '#') return 1;
-        if (b === '#') return -1;
-        return a.localeCompare(b);
-      });
-
-      const groups = keys.map(k => ({ label: k, items: groupsMap.get(k) }));
-      renderGroupedColumns(groups, colCount);
-    }
-
-    function renderGroupedByGroup(items, colCount) {
-      // Bucket everyone with the same groupNorm
-      const groupsMap = new Map();
-      for (const it of items) {
-        const key = it.groupNorm; // '' => unknown
-        if (!groupsMap.has(key)) groupsMap.set(key, []);
-        groupsMap.get(key).push(it);
+      function setGroupByButtons(mode) {
+        groupByMode = mode;
+        byGroupBtn.classList.toggle('active', mode === 'group');
+        byGroupBtn.setAttribute('aria-selected', mode === 'group');
+        byAlphaLastBtn.classList.toggle('active', mode === 'alphaLast');
+        byAlphaLastBtn.setAttribute('aria-selected', mode === 'alphaLast');
+        byAlphaFirstBtn.classList.toggle('active', mode === 'alphaFirst');
+        byAlphaFirstBtn.setAttribute('aria-selected', mode === 'alphaFirst');
+        saveOptions();
+        render();
       }
 
-      // Order: numeric groups ascending, then non-numeric alpha, then '' (unknown) last
-      const keys = Array.from(groupsMap.keys());
-      const numeric = keys.filter(k => k !== '' && /^\d+$/.test(k)).map(k => parseInt(k, 10)).sort((a,b)=>a-b).map(n=>String(n));
-      const alphas  = keys.filter(k => k !== '' && !/^\d+$/.test(k)).sort((a,b)=>a.localeCompare(b));
-      const unknown = keys.includes('') ? [''] : [];
-      const orderedKeys = [...numeric, ...alphas, ...unknown];
+      byGroupBtn.addEventListener('click', () => setGroupByButtons('group'));
+      byAlphaLastBtn.addEventListener('click', () => setGroupByButtons('alphaLast'));
+      byAlphaFirstBtn.addEventListener('click', () => setGroupByButtons('alphaFirst'));
 
-      const groups = orderedKeys.map(k => ({
-        label: k === '' ? 'Group Unknown' : `Group ${k}`,
-        items: groupsMap.get(k)
-      }));
+      /* ---------- Group Number buttons: default 'Do Not Change' every load ---------- */
+      const groupOptions = ['none', 1,2,3,4,5,6,7,8,9,10];
+      let selectedGroup = 'none'; // ALWAYS default on load; kept during scrolling
 
-      renderGroupedColumns(groups, colCount);
-    }
+      function buildGroupButtons() {
+        groupRowEl.innerHTML = '';
+        // Do Not Change (wide)
+        const noneBtn = document.createElement('button');
+        noneBtn.type = 'button';
+        noneBtn.className = 'group-btn';
+        noneBtn.dataset.value = 'none';
+        noneBtn.textContent = 'Do Not Change';
+        noneBtn.addEventListener('click', () => { selectedGroup = 'none'; markGroupButtons(); }, { passive: true });
+        groupRowEl.appendChild(noneBtn);
 
-    function renderGroupedColumns(groups, colCount) {
-      // Distribute whole groups across columns without splitting
-      const totalItems = groups.reduce((s,g)=>s+g.items.length,0);
-      const targetPerCol = Math.ceil(totalItems / colCount);
-      const cols = Array.from({ length: colCount }, () => []);
-      let colIdx = 0, countInCol = 0;
-
-      for (let i = 0; i < groups.length; i++) {
-        const g = groups[i];
-        const remainingGroups = groups.length - i;
-        const remainingCols = colCount - colIdx;
-        const mustBreak = (countInCol > 0) &&
-                          ((countInCol + g.items.length) > targetPerCol) &&
-                          (remainingGroups >= remainingCols);
-        if (mustBreak && colIdx < colCount - 1) {
-          colIdx++; countInCol = 0;
+        // 1..10 (small, square)
+        for (let i = 1; i <= 10; i++) {
+          const b = document.createElement('button');
+          b.type = 'button';
+          b.className = 'group-btn num-btn';
+          b.dataset.value = String(i);
+          b.textContent = String(i);
+          b.addEventListener('click', () => { selectedGroup = String(i); markGroupButtons(); }, { passive: true });
+          groupRowEl.appendChild(b);
         }
-        cols[colIdx].push(g);
-        countInCol += g.items.length;
+        markGroupButtons();
       }
-
-      columnsEl.innerHTML = '';
-      for (let c = 0; c < colCount; c++) {
-        const col = document.createElement('div');
-        col.className = 'column';
-        for (const g of cols[c]) {
-          const header = document.createElement('div');
-          header.className = 'group-header';
-          header.textContent = g.label;
-          col.appendChild(header);
-          for (const item of g.items) col.appendChild(studentRow(item));
-        }
-        columnsEl.appendChild(col);
-      }
-    }
-
-    function studentRow(item) {
-      const row = document.createElement('label');
-      row.className = 'student';
-      const checkedAttr = selectedSet.has(item.orig) ? 'checked' : '';
-      row.innerHTML = `
-        <input class="student-box" type="checkbox" data-name="${escapeHtml(item.orig)}" ${checkedAttr} />
-        <span>${escapeHtml(item.display)}</span>
-      `;
-      const cb = row.querySelector('input.student-box');
-      cb.addEventListener('change', () => {
-        const name = cb.getAttribute('data-name');
-        if (cb.checked) selectedSet.add(name); else selectedSet.delete(name);
-      }, { passive: true });
-      return row;
-    }
-
-    /* ===================== Helpers ===================== */
-    function toFirstLast(name) {
-      const s = (name || '').trim();
-      if (!s) return '';
-      const parts = s.split(',');
-      if (parts.length >= 2) {
-        const last = parts[0].trim();
-        const first = parts.slice(1).join(',').trim();
-        if (first) return `${first} ${last}`.replace(/\s+/g, ' ').trim();
-      }
-      return s;
-    }
-    function normalizeForSort(s) {
-      return s.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, ' ').trim();
-    }
-    function groupLetter(s) {
-      const m = (s || '').trim().match(/\p{L}|\p{N}/u);
-      return (m ? m[0] : '#').toUpperCase();
-    }
-    function getColumnCount() {
-      if (window.matchMedia('(min-width: 960px)').matches) return 3;
-      if (window.matchMedia('(min-width: 640px)').matches) return 2;
-      return 1;
-    }
-    function debounce(fn, ms) { let t; return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), ms); }; }
-    function escapeHtml(s) {
-      return s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-    }
-
-    /* ===================== Submit ===================== */
-    submitEl.addEventListener('click', async () => {
-      // Collect from our selection set (Safari-safe)
-      const names = Array.from(selectedSet);
-      if (!names.length) return setStatus('Please check at least one student.', true);
-
-      submitEl.disabled = true;
-      setStatus('Submitting…');
-
-      const body = new URLSearchParams({
-        names: JSON.stringify(names),
-        group: String(selectedGroup) // 'none' or '1'..'10'
-      }).toString();
-
-      try {
-        const res = await fetch(WEB_APP_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-          body
+      function markGroupButtons() {
+        groupRowEl.querySelectorAll('.group-btn').forEach(b => {
+          b.classList.toggle('active', b.dataset.value === selectedGroup);
         });
-        const data = await res.json().catch(() => ({}));
-        if (!data.ok) throw new Error(data.error || 'Unknown error');
-
-        selectedSet.clear();
-        document.querySelectorAll('input.student-box').forEach(cb => cb.checked = false);
-
-        const updated = (data.updated || []).join(', ');
-        const grouped = (data.grouped || []).join(', ');
-        const missing = (data.missing || []);
-        let msg = `Saved. Updated attendance: ${updated || '—'}.`;
-        if (data.groupApplied) msg += ` Set Group=${data.groupApplied} for: ${grouped || '—'}.`;
-        if (missing.length) msg += ` Not found: ${missing.join(', ')}.`;
-        setStatus(msg);
-      } catch (err) {
-        setStatus('Error: ' + String(err), true);
-      } finally {
-        submitEl.disabled = false;
       }
-    });
 
-    function setStatus(msg, isError = false) {
-      statusEl.textContent = msg;
-      statusEl.classList.toggle('error', isError);
-      statusEl.classList.toggle('muted', !isError);
-    }
-  </script>
-</body>
+      /* ---------- Data & iOS-safe render state ---------- */
+      let originalRows = []; // [{name, group}]
+      let selectedSet  = new Set();
+      let lastColCount = null;
+
+      // Load names + groups
+      loadRows();
+
+      async function loadRows() {
+        try {
+          const res = await fetch(WEB_APP_URL, { method: 'GET' });
+          const data = await res.json();
+          if (!data.ok) throw new Error(data.error || 'Failed to load');
+          if (Array.isArray(data.rows)) {
+            originalRows = data.rows.map(r => ({
+              name: r.name,
+              group: (r.group == null ? '' : String(r.group)).trim()
+            }));
+          } else if (Array.isArray(data.names)) {
+            // Fallback if server not updated: groups unknown
+            originalRows = data.names.map(n => ({ name: n, group: '' }));
+          } else {
+            originalRows = [];
+          }
+          render();
+        } catch (err) {
+          columnsEl.innerHTML = `<div class="card muted">Error loading: ${escapeHtml(String(err))}</div>`;
+        }
+      }
+
+      // Build fixed UI bits once (Safari-safe)
+      buildGroupButtons();
+
+      // Only re-render list if col count actually changed (prevents iOS scroll-resize resets)
+      window.addEventListener('resize', debounce(() => {
+        const cc = getColumnCount();
+        if (cc !== lastColCount) render();
+      }, 100), { passive: true });
+
+      /* ===================== Rendering ===================== */
+      function captureSelection() {
+        document.querySelectorAll('input.student-box').forEach(cb => {
+          const name = cb.getAttribute('data-name');
+          if (!name) return;
+          if (cb.checked) selectedSet.add(name); else selectedSet.delete(name);
+        });
+      }
+
+      function render() {
+        captureSelection();
+
+        const colCount = getColumnCount();
+        lastColCount = colCount;
+
+        // Prepare items with display and grouping keys based on mode
+        const items = originalRows.map(r => {
+          const display = (groupByMode === 'alphaFirst') ? toFirstLast(r.name) : r.name;
+          const dispTrim = (display || '').trim();
+          const lastLetterKey = groupLetter(dispTrim); // used for alpha group modes
+          // normalize group: numbers => "1","2", ...; empty => ''
+          const raw = (r.group || '').trim();
+          const numMatch = raw.match(/^\d+$/);
+          const groupNorm = raw === '' ? '' : (numMatch ? String(parseInt(raw, 10)) : raw);
+          return {
+            orig: r.name,
+            display: dispTrim,
+            sortKey: normalizeForSort(dispTrim),
+            letterKey: lastLetterKey,
+            groupNorm // '' => unknown
+          };
+        });
+
+        // Sort list by display name (used inside groups)
+        items.sort((a, b) => a.sortKey.localeCompare(b.sortKey));
+
+        if (!items.length) {
+          columnsEl.innerHTML = `<div class="card muted">No names found in the sheet.</div>`;
+          return;
+        }
+
+        if (groupByMode === 'group') {
+          renderGroupedByGroup(items, colCount);
+        } else {
+          renderGroupedByLetter(items, colCount);
+        }
+      }
+
+      function renderGroupedByLetter(items, colCount) {
+        // Combine same letter together
+        const groupsMap = new Map();
+        for (const it of items) {
+          const key = it.letterKey;
+          if (!groupsMap.has(key)) groupsMap.set(key, []);
+          groupsMap.get(key).push(it);
+        }
+        // Sort letter headers A→Z, then '#'
+        const keys = Array.from(groupsMap.keys()).sort((a, b) => {
+          if (a === '#') return 1;
+          if (b === '#') return -1;
+          return a.localeCompare(b);
+        });
+
+        const groups = keys.map(k => ({ label: k, items: groupsMap.get(k) }));
+        renderGroupedColumns(groups, colCount);
+      }
+
+      function renderGroupedByGroup(items, colCount) {
+        // Bucket everyone with the same groupNorm
+        const groupsMap = new Map();
+        for (const it of items) {
+          const key = it.groupNorm; // '' => unknown
+          if (!groupsMap.has(key)) groupsMap.set(key, []);
+          groupsMap.get(key).push(it);
+        }
+
+        // Order: numeric groups ascending, then non-numeric alpha, then '' (unknown) last
+        const keys = Array.from(groupsMap.keys());
+        const numeric = keys.filter(k => k !== '' && /^\d+$/.test(k)).map(k => parseInt(k, 10)).sort((a,b)=>a-b).map(n=>String(n));
+        const alphas  = keys.filter(k => k !== '' && !/^\d+$/.test(k)).sort((a,b)=>a.localeCompare(b));
+        const unknown = keys.includes('') ? [''] : [];
+        const orderedKeys = [...numeric, ...alphas, ...unknown];
+
+        const groups = orderedKeys.map(k => ({
+          label: k === '' ? 'Group Unknown' : `Group ${k}`,
+          items: groupsMap.get(k)
+        }));
+
+        renderGroupedColumns(groups, colCount);
+      }
+
+      function renderGroupedColumns(groups, colCount) {
+        // Distribute whole groups across columns without splitting
+        const totalItems = groups.reduce((s,g)=>s+g.items.length,0);
+        const targetPerCol = Math.ceil(totalItems / colCount);
+        const cols = Array.from({ length: colCount }, () => []);
+        let colIdx = 0, countInCol = 0;
+
+        for (let i = 0; i < groups.length; i++) {
+          const g = groups[i];
+          const remainingGroups = groups.length - i;
+          const remainingCols = colCount - colIdx;
+          const mustBreak = (countInCol > 0) &&
+                            ((countInCol + g.items.length) > targetPerCol) &&
+                            (remainingGroups >= remainingCols);
+          if (mustBreak && colIdx < colCount - 1) {
+            colIdx++; countInCol = 0;
+          }
+          cols[colIdx].push(g);
+          countInCol += g.items.length;
+        }
+
+        columnsEl.innerHTML = '';
+        for (let c = 0; c < colCount; c++) {
+          const col = document.createElement('div');
+          col.className = 'column';
+          for (const g of cols[c]) {
+            const header = document.createElement('div');
+            header.className = 'group-header';
+            header.textContent = g.label;
+            col.appendChild(header);
+            for (const item of g.items) col.appendChild(studentRow(item));
+          }
+          columnsEl.appendChild(col);
+        }
+      }
+
+      function studentRow(item) {
+        const row = document.createElement('label');
+        row.className = 'student';
+        const checkedAttr = selectedSet.has(item.orig) ? 'checked' : '';
+        row.innerHTML = `
+          <input class="student-box" type="checkbox" data-name="${escapeHtml(item.orig)}" ${checkedAttr} />
+          <span>${escapeHtml(item.display)}</span>
+        `;
+        const cb = row.querySelector('input.student-box');
+        cb.addEventListener('change', () => {
+          const name = cb.getAttribute('data-name');
+          if (cb.checked) selectedSet.add(name); else selectedSet.delete(name);
+        }, { passive: true });
+        return row;
+      }
+
+      /* ===================== Helpers ===================== */
+      function toFirstLast(name) {
+        const s = (name || '').trim();
+        if (!s) return '';
+        const parts = s.split(',');
+        if (parts.length >= 2) {
+          const last = parts[0].trim();
+          const first = parts.slice(1).join(',').trim();
+          if (first) return `${first} ${last}`.replace(/\s+/g, ' ').trim();
+        }
+        return s;
+      }
+      function normalizeForSort(s) {
+        return s.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, ' ').trim();
+      }
+      function groupLetter(s) {
+        const m = (s || '').trim().match(/\p{L}|\p{N}/u);
+        return (m ? m[0] : '#').toUpperCase();
+      }
+      function getColumnCount() {
+        if (window.matchMedia('(min-width: 960px)').matches) return 3;
+        if (window.matchMedia('(min-width: 640px)').matches) return 2;
+        return 1;
+      }
+      function debounce(fn, ms) { let t; return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), ms); }; }
+      function escapeHtml(s) {
+        return s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+      }
+
+      /* ===================== Submit ===================== */
+      submitEl.addEventListener('click', async () => {
+        // Collect from our selection set (Safari-safe)
+        const names = Array.from(selectedSet);
+        if (!names.length) return setStatus('Please check at least one student.', true);
+
+        submitEl.disabled = true;
+        setStatus('Submitting…');
+
+        const body = new URLSearchParams({
+          names: JSON.stringify(names),
+          group: String(selectedGroup) // 'none' or '1'..'10'
+        }).toString();
+
+        try {
+          const res = await fetch(WEB_APP_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body
+          });
+          const data = await res.json().catch(() => ({}));
+          if (!data.ok) throw new Error(data.error || 'Unknown error');
+
+          selectedSet.clear();
+          document.querySelectorAll('input.student-box').forEach(cb => cb.checked = false);
+
+          const updated = (data.updated || []).join(', ');
+          const grouped = (data.grouped || []).join(', ');
+          const missing = (data.missing || []);
+          let msg = `Saved. Updated attendance: ${updated || '—'}.`;
+          if (data.groupApplied) msg += ` Set Group=${data.groupApplied} for: ${grouped || '—'}.`;
+          if (missing.length) msg += ` Not found: ${missing.join(', ')}.`;
+          setStatus(msg);
+        } catch (err) {
+          setStatus('Error: ' + String(err), true);
+        } finally {
+          submitEl.disabled = false;
+        }
+      });
+
+      function setStatus(msg, isError = false) {
+        statusEl.textContent = msg;
+        statusEl.classList.toggle('error', isError);
+        statusEl.classList.toggle('muted', !isError);
+      }
+    </script>
+  </body>
 </html>
