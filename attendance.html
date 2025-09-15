@@ -194,7 +194,7 @@
     </div>
 
     <div id="columns" class="columns" aria-live="polite">
-      <div class="card muted">Loading students…</div>
+      <div class="card muted" id="loadingCard">Loading students…</div>
     </div>
 
     <!-- Full-width Submit -->
@@ -213,6 +213,7 @@
 
       /* ======== DOM HOOKS ======== */
       const columnsEl   = document.getElementById('columns');
+      const loadingCard = document.getElementById('loadingCard');
       const statusEl    = document.getElementById('status');
       const dateEl      = document.getElementById('date');
       const submitEl    = document.getElementById('submit');
@@ -222,11 +223,12 @@
       const byAlphaFirstBtn = document.getElementById('byAlphaFirst');
       const groupRowEl      = document.getElementById('groupRow');
 
-      /* ======== SAFE STATE (declare BEFORE any use to avoid TDZ errors) ======== */
+      /* ======== SAFE STATE ======== */
       let originalRows = [];    // [{name, group}]
       let selectedSet  = new Set();
-      let lastColCount = null;  // used in resize handler & render
+      let lastColCount = null;
       let selectedGroup = 'none'; // Group Number picker (default each load)
+      let isLoading = true;       // <-- controls "Loading…" visibility
 
       /* ======== UTIL ======== */
       const safeParse = (json, fallback) => { try { return JSON.parse(json); } catch { return fallback; } };
@@ -252,7 +254,6 @@
         if (window.matchMedia('(min-width: 640px)').matches) return 2;
         return 1;
       };
-
       const fetchJSONWithTimeout = async (url, opts = {}, timeoutMs = 10000) => {
         const controller = new AbortController();
         const id = setTimeout(() => controller.abort(), timeoutMs);
@@ -301,11 +302,9 @@
       byAlphaFirstBtn.addEventListener('click', () => setGroupByButtons('alphaFirst'));
       setGroupByButtons(groupByMode); // initialize
 
-      /* ======== GROUP NUMBER BUTTONS (layout fix with even spacing) ======== */
+      /* ======== GROUP NUMBER BUTTONS ======== */
       function buildGroupButtons() {
-        // Clear container
         groupRowEl.innerHTML = '';
-
         // Left cell: Do Not Change
         const noneBtn = document.createElement('button');
         noneBtn.type = 'button';
@@ -315,7 +314,7 @@
         noneBtn.addEventListener('click', () => { selectedGroup = 'none'; markGroupButtons(); }, { passive: true });
         groupRowEl.appendChild(noneBtn);
 
-        // Right cell: numeric strip (1..10) with equal gap
+        // Right cell: numeric strip (1..10)
         const strip = document.createElement('div');
         strip.className = 'num-strip';
         for (let i = 1; i <= 10; i++) {
@@ -336,7 +335,7 @@
           b.classList.toggle('active', b.dataset.value === selectedGroup);
         });
       }
-      buildGroupButtons(); // build immediately (so buttons always show)
+      buildGroupButtons(); // build immediately
 
       /* ======== LOAD DATA ======== */
       async function loadRows() {
@@ -353,8 +352,10 @@
           } else {
             originalRows = [];
           }
+          isLoading = false; // <-- data arrived
           render();
         } catch (err) {
+          isLoading = false; // <-- stop loading on error, too
           columnsEl.innerHTML = `<div class="card muted">Error loading students: ${escapeHtml(String(err.message || err))}</div>`;
         }
       }
@@ -376,19 +377,19 @@
       }
 
       function render() {
+        // Keep the loading card visible until data is ready
+        if (isLoading) return;
+
         captureSelection();
 
         const colCount = getColumnCount();
 
-        // Build items with normalized fields
         const items = originalRows.map(r => {
           const display = (groupByMode === 'alphaFirst') ? toFirstLast(r.name) : r.name;
           const dispTrim = (display || '').trim();
-
           const raw = (r.group || '').trim();
           const numMatch = raw.match(/^\d+$/);
           const groupNorm = raw === '' ? '' : (numMatch ? String(parseInt(raw, 10)) : raw);
-
           return {
             orig: r.name,
             display: dispTrim,
@@ -402,20 +403,20 @@
         items.sort((a, b) => a.sortKey.localeCompare(b.sortKey));
 
         if (!items.length) {
-          columnsEl.innerHTML = `<div class="card muted">No names found in the sheet.</div>`;
+          columnsEl.innerHTML = `<div class="card muted">No student names found in the sheet.</div>`;
           lastColCount = colCount;
           return;
         }
 
-        if (groupByMode === 'group') {
-          const groups = makeGroupsByGroup(items);
-          renderBalancedGroups(groups, colCount);
-        } else {
-          const groups = makeGroupsByLetter(items);
-          renderBalancedGroups(groups, colCount);
-        }
+        // Build ordered groups (PRESERVE GROUP ORDER)
+        const groups = (groupByMode === 'group') ? makeGroupsByGroup(items)
+                                                 : makeGroupsByLetter(items);
 
-        lastColCount = colCount; // set AFTER successful render
+        // Distribute sequentially across columns without splitting groups,
+        // preserving overall order (no reordering for balance).
+        renderSequentialGroups(groups, colCount);
+
+        lastColCount = colCount;
       }
 
       function makeGroupsByLetter(items) {
@@ -425,6 +426,7 @@
           if (!map.has(key)) map.set(key, []);
           map.get(key).push(it);
         }
+        // Order A→Z, then '#'
         const keys = Array.from(map.keys()).sort((a, b) => {
           if (a === '#') return 1;
           if (b === '#') return -1;
@@ -449,7 +451,6 @@
                             .sort((a,b)=>a.localeCompare(b));
         const unknown = keys.includes('') ? [''] : [];
         const ordered = [...numeric, ...alphas, ...unknown];
-
         return ordered.map(k => ({
           label: k === '' ? 'Group Unknown' : `Group ${k}`,
           size: map.get(k).length,
@@ -457,21 +458,30 @@
         }));
       }
 
-      /* ==== BALANCED COLUMN DISTRIBUTION (fix uneven third column) ==== */
-      function renderBalancedGroups(groups, colCount) {
-        // Bin-pack groups into columns by always placing the next largest group
-        // into the column with the smallest current total.
-        const cols = Array.from({ length: colCount }, () => ({ total: 0, groups: [] }));
-        // Sort groups by descending size to improve balance.
-        const sorted = [...groups].sort((a, b) => b.size - a.size);
-        for (const g of sorted) {
-          // pick column with smallest total
-          let t = 0;
-          for (let i = 1; i < cols.length; i++) {
-            if (cols[i].total < cols[t].total) t = i;
+      /* ==== ORDER-PRESERVING COLUMN DISTRIBUTION ==== */
+      function renderSequentialGroups(groups, colCount) {
+        const totalItems = groups.reduce((s,g)=>s+g.items.length,0);
+        const targetPerCol = Math.ceil(totalItems / colCount);
+
+        // Build columns by walking groups in order, moving to next column
+        // when adding the next whole group would exceed target (and we have columns left).
+        const cols = Array.from({ length: colCount }, () => []);
+        let colIdx = 0, countInCol = 0;
+
+        for (let i = 0; i < groups.length; i++) {
+          const g = groups[i];
+          const remainingGroups = groups.length - i;
+          const remainingCols = colCount - colIdx;
+
+          const wouldOverflow = (countInCol > 0) && ((countInCol + g.items.length) > targetPerCol);
+          const mustMove = wouldOverflow && (remainingGroups >= remainingCols);
+
+          if (mustMove && colIdx < colCount - 1) {
+            colIdx++;
+            countInCol = 0;
           }
-          cols[t].groups.push(g);
-          cols[t].total += g.size;
+          cols[colIdx].push(g);
+          countInCol += g.items.length;
         }
 
         // Render
@@ -479,7 +489,7 @@
         for (let c = 0; c < colCount; c++) {
           const col = document.createElement('div');
           col.className = 'column';
-          for (const g of cols[c].groups) {
+          for (const g of cols[c]) {
             const header = document.createElement('div');
             header.className = 'group-header';
             header.textContent = g.label;
