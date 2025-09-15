@@ -1,2 +1,2 @@
 // Keep this as the single source of truth for your GAS Web App endpoint.
-const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbz1GEBT0SuW_a8wBovvE-AeHG4JRuyBJhrotBUApUkygIZx7wwWXlgqUiB7OZsfMxg/exec';
+window.WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbz1GEBT0SuW_a8wBovvE-AeHG4JRuyBJhrotBUApUkygIZx7wwWXlgqUiB7OZsfMxg/exec';

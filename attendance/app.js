@@ -90,38 +90,50 @@ if (typeof WEB_APP_URL === 'undefined' || !WEB_APP_URL) {
     // New model:
     // - groupByMode: 'group' | 'alpha'
     // - sortMode:    'last'  | 'first'
-    let groupByMode = saved.groupByMode || 'group';
-    let sortMode    = saved.sortMode    || 'last';   // default = Last Name
+    const validGroup = new Set(['group', 'alpha', 'alphaLast', 'alphaFirst']);
+    const validSort  = new Set(['last', 'first']);
+
+    let groupByModeRaw = saved.groupByMode || 'group';
+    if (!validGroup.has(groupByModeRaw)) groupByModeRaw = 'group';
+    // Map legacy values to new:
+    let groupByMode = (groupByModeRaw === 'alpha' || groupByModeRaw.startsWith('alpha')) ? 'alpha' : 'group';
+
+    let sortMode = saved.sortMode || 'last';
+    if (!validSort.has(sortMode)) {
+    // Legacy: infer from legacy group setting if present
+    if (groupByModeRaw === 'alphaFirst') sortMode = 'first';
+    else sortMode = 'last';
+    }
 
     function saveOptions() {
-      const opts = {
+    const opts = {
         darkMode: document.body.classList.contains('dark'),
         groupByMode,
         sortMode
-      };
-      try { localStorage.setItem('attendanceOptions', JSON.stringify(opts)); } catch {}
+    };
+    try { localStorage.setItem('attendanceOptions', JSON.stringify(opts)); } catch {}
     }
 
     function setGroupByButtons(mode) {
-      groupByMode = mode;
-      byGroupBtn.classList.toggle('active', mode === 'group');
-      byGroupBtn.setAttribute('aria-selected', mode === 'group');
-      byAlphaBtn.classList.toggle('active', mode === 'alpha');
-      byAlphaBtn.setAttribute('aria-selected', mode === 'alpha');
-      saveOptions();
-      render();
+    groupByMode = (mode === 'alpha') ? 'alpha' : 'group';
+    byGroupBtn.classList.toggle('active', groupByMode === 'group');
+    byGroupBtn.setAttribute('aria-selected', groupByMode === 'group');
+    byAlphaBtn.classList.toggle('active', groupByMode === 'alpha');
+    byAlphaBtn.setAttribute('aria-selected', groupByMode === 'alpha');
+    saveOptions();
+    render();
     }
 
     function setSortByButtons(mode) {
-      sortMode = mode; // 'last' | 'first'
-      const lastActive  = mode === 'last';
-      const firstActive = mode === 'first';
-      sortByLastBtn.classList.toggle('active', lastActive);
-      sortByLastBtn.setAttribute('aria-selected', lastActive);
-      sortByFirstBtn.classList.toggle('active', firstActive);
-      sortByFirstBtn.setAttribute('aria-selected', firstActive);
-      saveOptions();
-      render();
+    sortMode = (mode === 'first') ? 'first' : 'last';
+    const lastActive  = sortMode === 'last';
+    const firstActive = sortMode === 'first';
+    sortByLastBtn.classList.toggle('active', lastActive);
+    sortByLastBtn.setAttribute('aria-selected', lastActive);
+    sortByFirstBtn.classList.toggle('active', firstActive);
+    sortByFirstBtn.setAttribute('aria-selected', firstActive);
+    saveOptions();
+    render();
     }
 
     byGroupBtn.addEventListener('click', () => setGroupByButtons('group'));
@@ -129,9 +141,10 @@ if (typeof WEB_APP_URL === 'undefined' || !WEB_APP_URL) {
     sortByLastBtn.addEventListener('click',  () => setSortByButtons('last'));
     sortByFirstBtn.addEventListener('click', () => setSortByButtons('first'));
 
-    // Initialize button states
+    // Initialize button states (after DOM ready)
     setGroupByButtons(groupByMode);
     setSortByButtons(sortMode);
+
 
     /* ======== GROUP NUMBER BUTTONS ======== */
     function buildGroupButtons() {
