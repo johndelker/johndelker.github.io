@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Attendance</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body class="dark">
+  <main>
+    <div class="header">
+      <h1>Attendance</h1>
+      <div class="right">
+        <span id="date" class="muted"></span>
+        <button id="themeToggle" class="theme-toggle" aria-label="Toggle dark mode" title="Toggle dark mode">🌙</button>
+      </div>
+    </div>
+
+    <!-- Group by segmented control -->
+    <div class="control-row">
+      <span class="label">Group by</span>
+      <div class="seg" role="tablist" aria-label="Group by">
+        <button id="byGroup" class="active" role="tab" aria-selected="true">Group Number</button>
+        <button id="byAlphaLast" role="tab" aria-selected="false">Alphabetical (Last Name)</button>
+        <button id="byAlphaFirst" role="tab" aria-selected="false">Alphabetical (First Name)</button>
+      </div>
+    </div>
+
+    <!-- Group Number picker -->
+    <div class="control-row card">
+      <div class="group-opt">
+        <span class="label">Group Number</span>
+        <div id="groupRow" class="group-row">
+          <!-- Filled by JS -->
+        </div>
+      </div>
+    </div>
+
+    <div id="columns" class="columns" aria-live="polite">
+      <div class="card muted" id="loadingCard">Loading students…</div>
+    </div>
+
+    <!-- Full-width Submit -->
+    <div class="actions">
+      <button id="submit">Submit</button>
+      <span id="status" class="status muted" role="status"></span>
+    </div>
+
+    <div class="spacer"></div>
+  </main>
+
+  <!-- Load config first, then app. `defer` preserves order. -->
+  <script src="./config.js" defer></script>
+  <script src="./app.js" defer></script>
+</body>
+</html>
