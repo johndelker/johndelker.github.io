@@ -18,7 +18,7 @@
       --chip-hover: #f0f1f2;
       --msu: #115740;           /* Spartan Green */
       --msu-contrast: #ffffff;
-      --seg-bg: #0f172a;        /* dark background for segmented control (works in both themes) */
+      --seg-bg: #0f172a;        /* dark background for segmented control */
     }
     /* Dark theme overrides */
     body.dark {
@@ -198,371 +198,382 @@
   </main>
 
   <script>
-    const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbz1GEBT0SuW_a8wBovvE-AeHG4JRuyBJhrotBUApUkygIZx7wwWXlgqUiB7OZsfMxg/exec';
+    document.addEventListener('DOMContentLoaded', () => {
+      const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbz1GEBT0SuW_a8wBovvE-AeHG4JRuyBJhrotBUApUkygIZx7wwWXlgqUiB7OZsfMxg/exec';
 
-    const columnsEl   = document.getElementById('columns');
-    const statusEl    = document.getElementById('status');
-    const dateEl      = document.getElementById('date');
-    const submitEl    = document.getElementById('submit');
-    const themeToggle = document.getElementById('themeToggle');
+      const columnsEl   = document.getElementById('columns');
+      const statusEl    = document.getElementById('status');
+      const dateEl      = document.getElementById('date');
+      const submitEl    = document.getElementById('submit');
+      const themeToggle = document.getElementById('themeToggle');
 
-    // Group-by segmented buttons
-    const byGroupBtn      = document.getElementById('byGroup');
-    const byAlphaLastBtn  = document.getElementById('byAlphaLast');
-    const byAlphaFirstBtn = document.getElementById('byAlphaFirst');
+      // Group-by segmented buttons
+      const byGroupBtn      = document.getElementById('byGroup');
+      const byAlphaLastBtn  = document.getElementById('byAlphaLast');
+      const byAlphaFirstBtn = document.getElementById('byAlphaFirst');
 
-    // Group Number picker container
-    const groupRowEl = document.getElementById('groupRow');
+      // Group Number picker container
+      const groupRowEl = document.getElementById('groupRow');
 
-    // Date + theme
-    dateEl.textContent = new Date().toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
-
-    // Safe JSON parse (handles corrupted localStorage)
-    function safeParse(json, fallback) {
-      try { return JSON.parse(json); } catch { return fallback; }
-    }
-
-    // === Persisted options (NOT the selected group number) ===
-    const saved = safeParse(localStorage.getItem('attendanceOptions') || '', {});
-    // Dark mode default ON unless saved says otherwise
-    if (saved.darkMode === false) {
-      document.body.classList.remove('dark');
-      themeToggle.textContent = '☀️';
-    }
-    // Group-by mode default = "Group Number"
-    let groupByMode = saved.groupByMode || 'group'; // 'group' | 'alphaLast' | 'alphaFirst'
-    setGroupByButtons(groupByMode);
-
-    themeToggle.addEventListener('click', () => {
-      const isDark = document.body.classList.toggle('dark');
-      themeToggle.textContent = isDark ? '🌙' : '☀️';
-      saveOptions();
-    });
-
-    function saveOptions() {
-      const opts = {
-        darkMode: document.body.classList.contains('dark'),
-        groupByMode
-      };
-      localStorage.setItem('attendanceOptions', JSON.stringify(opts));
-    }
-
-    function setGroupByButtons(mode) {
-      groupByMode = mode;
-      byGroupBtn.classList.toggle('active', mode === 'group');
-      byGroupBtn.setAttribute('aria-selected', mode === 'group');
-      byAlphaLastBtn.classList.toggle('active', mode === 'alphaLast');
-      byAlphaLastBtn.setAttribute('aria-selected', mode === 'alphaLast');
-      byAlphaFirstBtn.classList.toggle('active', mode === 'alphaFirst');
-      byAlphaFirstBtn.setAttribute('aria-selected', mode === 'alphaFirst');
-      saveOptions();
-      render();
-    }
-
-    byGroupBtn.addEventListener('click', () => setGroupByButtons('group'));
-    byAlphaLastBtn.addEventListener('click', () => setGroupByButtons('alphaLast'));
-    byAlphaFirstBtn.addEventListener('click', () => setGroupByButtons('alphaFirst'));
-
-    /* ---------- Group Number buttons: default 'Do Not Change' every load ---------- */
-    let selectedGroup = 'none'; // ALWAYS default on load; kept during scrolling
-    buildGroupButtons();        // built once (Safari-safe)
-
-    function buildGroupButtons() {
-      groupRowEl.innerHTML = '';
-      // Do Not Change (wide)
-      const noneBtn = document.createElement('button');
-      noneBtn.type = 'button';
-      noneBtn.className = 'group-btn';
-      noneBtn.dataset.value = 'none';
-      noneBtn.textContent = 'Do Not Change';
-      noneBtn.addEventListener('click', () => { selectedGroup = 'none'; markGroupButtons(); }, { passive: true });
-      groupRowEl.appendChild(noneBtn);
-
-      // 1..10 (small, square)
-      for (let i = 1; i <= 10; i++) {
-        const b = document.createElement('button');
-        b.type = 'button';
-        b.className = 'group-btn num-btn';
-        b.dataset.value = String(i);
-        b.textContent = String(i);
-        b.addEventListener('click', () => { selectedGroup = String(i); markGroupButtons(); }, { passive: true });
-        groupRowEl.appendChild(b);
-      }
-      markGroupButtons();
-    }
-    function markGroupButtons() {
-      groupRowEl.querySelectorAll('.group-btn').forEach(b => {
-        b.classList.toggle('active', b.dataset.value === selectedGroup);
-      });
-    }
-
-    /* ---------- Robust fetch with timeout (prevents “Loading…” forever) ---------- */
-    async function fetchJSONWithTimeout(url, opts = {}, timeoutMs = 10000) {
-      const controller = new AbortController();
-      const id = setTimeout(() => controller.abort(), timeoutMs);
+      // Date
       try {
-        const res = await fetch(url, { ...opts, signal: controller.signal });
-        const text = await res.text();
-        let data;
-        try { data = JSON.parse(text); }
-        catch { throw new Error('Server did not return JSON.'); }
-        return data;
-      } finally {
-        clearTimeout(id);
+        dateEl.textContent = new Date().toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+      } catch {}
+
+      // Safe JSON parse
+      const safeParse = (json, fallback) => { try { return JSON.parse(json); } catch { return fallback; } };
+
+      /* ---------- Persisted options (NOT the selected group number) ---------- */
+      const saved = safeParse(localStorage.getItem('attendanceOptions') || '', {});
+      // Dark mode default ON unless saved says otherwise
+      if (saved.darkMode === false) {
+        document.body.classList.remove('dark');
+        themeToggle.textContent = '☀️';
       }
-    }
 
-    /* ---------- Data & iOS-safe render state ---------- */
-    let originalRows = []; // [{name, group}]
-    let selectedSet  = new Set();
-    let lastColCount = null;
+      // Build Group Number buttons FIRST (so they always appear)
+      let selectedGroup = 'none'; // ALWAYS default on load; kept during scrolling
+      buildGroupButtons();
 
-    // Load names + groups
-    loadRows();
+      function buildGroupButtons() {
+        try {
+          groupRowEl.innerHTML = '';
+          // Do Not Change (wide)
+          const noneBtn = document.createElement('button');
+          noneBtn.type = 'button';
+          noneBtn.className = 'group-btn';
+          noneBtn.dataset.value = 'none';
+          noneBtn.textContent = 'Do Not Change';
+          noneBtn.addEventListener('click', () => { selectedGroup = 'none'; markGroupButtons(); }, { passive: true });
+          groupRowEl.appendChild(noneBtn);
 
-    async function loadRows() {
-      try {
-        const data = await fetchJSONWithTimeout(WEB_APP_URL, { method: 'GET' }, 10000);
-        if (!data || data.ok !== true) throw new Error(data && data.error ? data.error : 'Failed to load');
-        if (Array.isArray(data.rows)) {
-          originalRows = data.rows.map(r => ({
-            name: r.name,
-            group: (r.group == null ? '' : String(r.group)).trim()
-          }));
-        } else if (Array.isArray(data.names)) {
-          // Fallback if server not updated: groups unknown
-          originalRows = data.names.map(n => ({ name: n, group: '' }));
-        } else {
-          originalRows = [];
+          // 1..10 (small, square)
+          for (let i = 1; i <= 10; i++) {
+            const b = document.createElement('button');
+            b.type = 'button';
+            b.className = 'group-btn num-btn';
+            b.dataset.value = String(i);
+            b.textContent = String(i);
+            b.addEventListener('click', () => { selectedGroup = String(i); markGroupButtons(); }, { passive: true });
+            groupRowEl.appendChild(b);
+          }
+          markGroupButtons();
+        } catch (e) {
+          console.error('Failed to build group buttons:', e);
         }
-        render();
-      } catch (err) {
-        columnsEl.innerHTML = `<div class="card muted">Error loading students: ${escapeHtml(String(err.message || err))}</div>`;
       }
-    }
-
-    // Only re-render list if col count actually changed (prevents iOS scroll-resize resets)
-    window.addEventListener('resize', debounce(() => {
-      const cc = getColumnCount();
-      if (cc !== lastColCount) render();
-    }, 100), { passive: true });
-
-    /* ===================== Rendering ===================== */
-    function captureSelection() {
-      document.querySelectorAll('input.student-box').forEach(cb => {
-        const name = cb.getAttribute('data-name');
-        if (!name) return;
-        if (cb.checked) selectedSet.add(name); else selectedSet.delete(name);
-      });
-    }
-
-    function render() {
-      captureSelection();
-
-      const colCount = getColumnCount();
-      lastColCount = colCount;
-
-      const items = originalRows.map(r => {
-        const display =
-          (groupByMode === 'alphaFirst') ? toFirstLast(r.name) : r.name;
-        const dispTrim = (display || '').trim();
-
-        // Normalize group: numbers => "1","2", ...; empty => ''
-        const raw = (r.group || '').trim();
-        const numMatch = raw.match(/^\d+$/);
-        const groupNorm = raw === '' ? '' : (numMatch ? String(parseInt(raw, 10)) : raw);
-
-        return {
-          orig: r.name,
-          display: dispTrim,
-          sortKey: normalizeForSort(dispTrim),
-          letterKey: firstAlphaNum(dispTrim),
-          groupNorm // '' => unknown
-        };
-      });
-
-      // Sort by display name within groups
-      items.sort((a, b) => a.sortKey.localeCompare(b.sortKey));
-
-      if (!items.length) {
-        columnsEl.innerHTML = `<div class="card muted">No names found in the sheet.</div>`;
-        return;
-      }
-
-      if (groupByMode === 'group') {
-        renderGroupedByGroup(items, colCount);
-      } else {
-        renderGroupedByLetter(items, colCount);
-      }
-    }
-
-    function renderGroupedByLetter(items, colCount) {
-      const map = new Map();
-      for (const it of items) {
-        const key = it.letterKey;
-        if (!map.has(key)) map.set(key, []);
-        map.get(key).push(it);
-      }
-      const keys = Array.from(map.keys()).sort((a, b) => {
-        if (a === '#') return 1;
-        if (b === '#') return -1;
-        return a.localeCompare(b);
-      });
-      const groups = keys.map(k => ({ label: k, items: map.get(k) }));
-      renderGroupedColumns(groups, colCount);
-    }
-
-    function renderGroupedByGroup(items, colCount) {
-      // Bucket everyone with the same group value
-      const map = new Map();
-      for (const it of items) {
-        const key = it.groupNorm; // '' => unknown
-        if (!map.has(key)) map.set(key, []);
-        map.get(key).push(it);
-      }
-
-      const keys = Array.from(map.keys());
-      const numeric = keys.filter(k => k !== '' && /^\d+$/.test(k))
-                          .map(k => parseInt(k, 10))
-                          .sort((a,b)=>a-b)
-                          .map(n => String(n));
-      const alphas  = keys.filter(k => k !== '' && !/^\d+$/.test(k))
-                          .sort((a,b)=>a.localeCompare(b));
-      const unknown = keys.includes('') ? [''] : [];
-      const ordered = [...numeric, ...alphas, ...unknown];
-
-      const groups = ordered.map(k => ({
-        label: k === '' ? 'Group Unknown' : `Group ${k}`,
-        items: map.get(k)
-      }));
-      renderGroupedColumns(groups, colCount);
-    }
-
-    function renderGroupedColumns(groups, colCount) {
-      // Distribute whole groups across columns without splitting
-      const totalItems = groups.reduce((s,g)=>s+g.items.length,0);
-      const targetPerCol = Math.ceil(totalItems / colCount);
-      const cols = Array.from({ length: colCount }, () => []);
-      let colIdx = 0, countInCol = 0;
-
-      for (let i = 0; i < groups.length; i++) {
-        const g = groups[i];
-        const remainingGroups = groups.length - i;
-        const remainingCols = colCount - colIdx;
-        const mustBreak = (countInCol > 0) &&
-                          ((countInCol + g.items.length) > targetPerCol) &&
-                          (remainingGroups >= remainingCols);
-        if (mustBreak && colIdx < colCount - 1) {
-          colIdx++; countInCol = 0;
-        }
-        cols[colIdx].push(g);
-        countInCol += g.items.length;
-      }
-
-      columnsEl.innerHTML = '';
-      for (let c = 0; c < colCount; c++) {
-        const col = document.createElement('div');
-        col.className = 'column';
-        for (const g of cols[c]) {
-          const header = document.createElement('div');
-          header.className = 'group-header';
-          header.textContent = g.label;
-          col.appendChild(header);
-          for (const item of g.items) col.appendChild(studentRow(item));
-        }
-        columnsEl.appendChild(col);
-      }
-    }
-
-    function studentRow(item) {
-      const row = document.createElement('label');
-      row.className = 'student';
-      const checkedAttr = selectedSet.has(item.orig) ? 'checked' : '';
-      row.innerHTML = `
-        <input class="student-box" type="checkbox" data-name="${escapeHtml(item.orig)}" ${checkedAttr} />
-        <span>${escapeHtml(item.display)}</span>
-      `;
-      const cb = row.querySelector('input.student-box');
-      cb.addEventListener('change', () => {
-        const name = cb.getAttribute('data-name');
-        if (cb.checked) selectedSet.add(name); else selectedSet.delete(name);
-      }, { passive: true });
-      return row;
-    }
-
-    /* ===================== Helpers ===================== */
-    function toFirstLast(name) {
-      const s = (name || '').trim();
-      if (!s) return '';
-      const parts = s.split(',');
-      if (parts.length >= 2) {
-        const last = parts[0].trim();
-        const first = parts.slice(1).join(',').trim();
-        if (first) return `${first} ${last}`.replace(/\s+/g, ' ').trim();
-      }
-      return s;
-    }
-    function normalizeForSort(s) {
-      return s.toLowerCase().replace(/[^a-z0-9]+/gi, ' ').trim();
-    }
-    function firstAlphaNum(s) {
-      const ch = (s || '').trim().charAt(0).toUpperCase();
-      return /[A-Z0-9]/.test(ch) ? ch : '#';
-    }
-    function getColumnCount() {
-      if (window.matchMedia('(min-width: 960px)').matches) return 3;
-      if (window.matchMedia('(min-width: 640px)').matches) return 2;
-      return 1;
-    }
-    function debounce(fn, ms) { let t; return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), ms); }; }
-    function escapeHtml(s) {
-      return (s == null ? '' : String(s)).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-    }
-
-    /* ===================== Submit ===================== */
-    submitEl.addEventListener('click', async () => {
-      const names = Array.from(selectedSet);
-      if (!names.length) return setStatus('Please check at least one student.', true);
-
-      submitEl.disabled = true;
-      setStatus('Submitting…');
-
-      const body = new URLSearchParams({
-        names: JSON.stringify(names),
-        group: String(selectedGroup) // 'none' or '1'..'10'
-      }).toString();
-
-      try {
-        const res = await fetch(WEB_APP_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-          body
+      function markGroupButtons() {
+        groupRowEl.querySelectorAll('.group-btn').forEach(b => {
+          b.classList.toggle('active', b.dataset.value === selectedGroup);
         });
-        const data = await res.json().catch(() => ({}));
-        if (!data.ok) throw new Error(data.error || 'Unknown error');
+      }
 
-        selectedSet.clear();
-        document.querySelectorAll('input.student-box').forEach(cb => cb.checked = false);
+      // Theme toggle
+      themeToggle.addEventListener('click', () => {
+        const isDark = document.body.classList.toggle('dark');
+        themeToggle.textContent = isDark ? '🌙' : '☀️';
+        saveOptions();
+      });
 
-        const updated = (data.updated || []).join(', ');
-        const grouped = (data.grouped || []).join(', ');
-        const missing = (data.missing || []);
-        let msg = `Saved. Updated attendance: ${updated || '—'}.`;
-        if (data.groupApplied) msg += ` Set Group=${data.groupApplied} for: ${grouped || '—'}.`;
-        if (missing.length) msg += ` Not found: ${missing.join(', ')}.`;
-        setStatus(msg);
-      } catch (err) {
-        setStatus('Error: ' + String(err.message || err), true);
-      } finally {
-        submitEl.disabled = false;
+      // Group-by mode default = "Group Number"
+      let groupByMode = saved.groupByMode || 'group'; // 'group' | 'alphaLast' | 'alphaFirst'
+      setGroupByButtons(groupByMode);
+
+      function saveOptions() {
+        const opts = {
+          darkMode: document.body.classList.contains('dark'),
+          groupByMode
+        };
+        try { localStorage.setItem('attendanceOptions', JSON.stringify(opts)); } catch {}
+      }
+
+      function setGroupByButtons(mode) {
+        groupByMode = mode;
+        byGroupBtn.classList.toggle('active', mode === 'group');
+        byGroupBtn.setAttribute('aria-selected', mode === 'group');
+        byAlphaLastBtn.classList.toggle('active', mode === 'alphaLast');
+        byAlphaLastBtn.setAttribute('aria-selected', mode === 'alphaLast');
+        byAlphaFirstBtn.classList.toggle('active', mode === 'alphaFirst');
+        byAlphaFirstBtn.setAttribute('aria-selected', mode === 'alphaFirst');
+        saveOptions();
+        render();
+      }
+
+      byGroupBtn.addEventListener('click', () => setGroupByButtons('group'));
+      byAlphaLastBtn.addEventListener('click', () => setGroupByButtons('alphaLast'));
+      byAlphaFirstBtn.addEventListener('click', () => setGroupByButtons('alphaFirst'));
+
+      /* ---------- Robust fetch with timeout ---------- */
+      async function fetchJSONWithTimeout(url, opts = {}, timeoutMs = 10000) {
+        const controller = new AbortController();
+        const id = setTimeout(() => controller.abort(), timeoutMs);
+        try {
+          const res = await fetch(url, { ...opts, signal: controller.signal });
+          const text = await res.text();
+          let data;
+          try { data = JSON.parse(text); }
+          catch { throw new Error('Server did not return JSON.'); }
+          return data;
+        } finally {
+          clearTimeout(id);
+        }
+      }
+
+      /* ---------- Data & iOS-safe render state ---------- */
+      let originalRows = []; // [{name, group}]
+      let selectedSet  = new Set();
+      let lastColCount = null;
+
+      // Load names + groups
+      loadRows();
+
+      async function loadRows() {
+        try {
+          const data = await fetchJSONWithTimeout(WEB_APP_URL, { method: 'GET' }, 10000);
+          if (!data || data.ok !== true) throw new Error(data && data.error ? data.error : 'Failed to load');
+          if (Array.isArray(data.rows)) {
+            originalRows = data.rows.map(r => ({
+              name: r.name,
+              group: (r.group == null ? '' : String(r.group)).trim()
+            }));
+          } else if (Array.isArray(data.names)) {
+            // Fallback if server not updated: groups unknown
+            originalRows = data.names.map(n => ({ name: n, group: '' }));
+          } else {
+            originalRows = [];
+          }
+          render();
+        } catch (err) {
+          // Ensure we never leave "Loading…" on screen
+          columnsEl.innerHTML = `<div class="card muted">Error loading students: ${escapeHtml(String(err.message || err))}</div>`;
+        }
+      }
+
+      // Only re-render list if col count actually changed (prevents iOS scroll-resize resets)
+      window.addEventListener('resize', debounce(() => {
+        const cc = getColumnCount();
+        if (cc !== lastColCount) render();
+      }, 100), { passive: true });
+
+      /* ===================== Rendering ===================== */
+      function captureSelection() {
+        document.querySelectorAll('input.student-box').forEach(cb => {
+          const name = cb.getAttribute('data-name');
+          if (!name) return;
+          if (cb.checked) selectedSet.add(name); else selectedSet.delete(name);
+        });
+      }
+
+      function render() {
+        try {
+          captureSelection();
+
+          const colCount = getColumnCount();
+          lastColCount = colCount;
+
+          const items = originalRows.map(r => {
+            const display =
+              (groupByMode === 'alphaFirst') ? toFirstLast(r.name) : r.name;
+            const dispTrim = (display || '').trim();
+
+            // Normalize group: numbers => "1","2", ...; empty => ''
+            const raw = (r.group || '').trim();
+            const numMatch = raw.match(/^\d+$/);
+            const groupNorm = raw === '' ? '' : (numMatch ? String(parseInt(raw, 10)) : raw);
+
+            return {
+              orig: r.name,
+              display: dispTrim,
+              sortKey: normalizeForSort(dispTrim),
+              letterKey: firstAlphaNum(dispTrim),
+              groupNorm // '' => unknown
+            };
+          });
+
+          // Sort by display name within groups
+          items.sort((a, b) => a.sortKey.localeCompare(b.sortKey));
+
+          if (!items.length) {
+            columnsEl.innerHTML = `<div class="card muted">No names found in the sheet.</div>`;
+            return;
+          }
+
+          if (groupByMode === 'group') {
+            renderGroupedByGroup(items, colCount);
+          } else {
+            renderGroupedByLetter(items, colCount);
+          }
+        } catch (e) {
+          columnsEl.innerHTML = `<div class="card muted">Render error: ${escapeHtml(String(e))}</div>`;
+        }
+      }
+
+      function renderGroupedByLetter(items, colCount) {
+        const map = new Map();
+        for (const it of items) {
+          const key = it.letterKey;
+          if (!map.has(key)) map.set(key, []);
+          map.get(key).push(it);
+        }
+        const keys = Array.from(map.keys()).sort((a, b) => {
+          if (a === '#') return 1;
+          if (b === '#') return -1;
+          return a.localeCompare(b);
+        });
+        const groups = keys.map(k => ({ label: k, items: map.get(k) }));
+        renderGroupedColumns(groups, colCount);
+      }
+
+      function renderGroupedByGroup(items, colCount) {
+        const map = new Map();
+        for (const it of items) {
+          const key = it.groupNorm; // '' => unknown
+          if (!map.has(key)) map.set(key, []);
+          map.get(key).push(it);
+        }
+
+        const keys = Array.from(map.keys());
+        const numeric = keys.filter(k => k !== '' && /^\d+$/.test(k))
+                            .map(k => parseInt(k, 10))
+                            .sort((a,b)=>a-b)
+                            .map(n => String(n));
+        const alphas  = keys.filter(k => k !== '' && !/^\d+$/.test(k))
+                            .sort((a,b)=>a.localeCompare(b));
+        const unknown = keys.includes('') ? [''] : [];
+        const ordered = [...numeric, ...alphas, ...unknown];
+
+        const groups = ordered.map(k => ({
+          label: k === '' ? 'Group Unknown' : `Group ${k}`,
+          items: map.get(k)
+        }));
+        renderGroupedColumns(groups, colCount);
+      }
+
+      function renderGroupedColumns(groups, colCount) {
+        const totalItems = groups.reduce((s,g)=>s+g.items.length,0);
+        const targetPerCol = Math.ceil(totalItems / colCount);
+        const cols = Array.from({ length: colCount }, () => []);
+        let colIdx = 0, countInCol = 0;
+
+        for (let i = 0; i < groups.length; i++) {
+          const g = groups[i];
+          const remainingGroups = groups.length - i;
+          const remainingCols = colCount - colIdx;
+          const mustBreak = (countInCol > 0) &&
+                            ((countInCol + g.items.length) > targetPerCol) &&
+                            (remainingGroups >= remainingCols);
+          if (mustBreak && colIdx < colCount - 1) {
+            colIdx++; countInCol = 0;
+          }
+          cols[colIdx].push(g);
+          countInCol += g.items.length;
+        }
+
+        columnsEl.innerHTML = '';
+        for (let c = 0; c < colCount; c++) {
+          const col = document.createElement('div');
+          col.className = 'column';
+          for (const g of cols[c]) {
+            const header = document.createElement('div');
+            header.className = 'group-header';
+            header.textContent = g.label;
+            col.appendChild(header);
+            for (const item of g.items) col.appendChild(studentRow(item));
+          }
+          columnsEl.appendChild(col);
+        }
+      }
+
+      function studentRow(item) {
+        const row = document.createElement('label');
+        row.className = 'student';
+        const checkedAttr = selectedSet.has(item.orig) ? 'checked' : '';
+        row.innerHTML = `
+          <input class="student-box" type="checkbox" data-name="${escapeHtml(item.orig)}" ${checkedAttr} />
+          <span>${escapeHtml(item.display)}</span>
+        `;
+        const cb = row.querySelector('input.student-box');
+        cb.addEventListener('change', () => {
+          const name = cb.getAttribute('data-name');
+          if (cb.checked) selectedSet.add(name); else selectedSet.delete(name);
+        }, { passive: true });
+        return row;
+      }
+
+      /* ===================== Helpers ===================== */
+      function toFirstLast(name) {
+        const s = (name || '').trim();
+        if (!s) return '';
+        const parts = s.split(',');
+        if (parts.length >= 2) {
+          const last = parts[0].trim();
+          const first = parts.slice(1).join(',').trim();
+          if (first) return `${first} ${last}`.replace(/\s+/g, ' ').trim();
+        }
+        return s;
+      }
+      function normalizeForSort(s) {
+        return (s||'').toLowerCase().replace(/[^a-z0-9]+/gi, ' ').trim();
+      }
+      function firstAlphaNum(s) {
+        const ch = (s || '').trim().charAt(0).toUpperCase();
+        return /[A-Z0-9]/.test(ch) ? ch : '#';
+      }
+      function getColumnCount() {
+        if (window.matchMedia('(min-width: 960px)').matches) return 3;
+        if (window.matchMedia('(min-width: 640px)').matches) return 2;
+        return 1;
+      }
+      function debounce(fn, ms) { let t; return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), ms); }; }
+      function escapeHtml(s) {
+        return (s == null ? '' : String(s)).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+      }
+
+      /* ===================== Submit ===================== */
+      submitEl.addEventListener('click', async () => {
+        const names = Array.from(selectedSet);
+        if (!names.length) return setStatus('Please check at least one student.', true);
+
+        submitEl.disabled = true;
+        setStatus('Submitting…');
+
+        const body = new URLSearchParams({
+          names: JSON.stringify(names),
+          group: String(selectedGroup) // 'none' or '1'..'10'
+        }).toString();
+
+        try {
+          const res = await fetch(WEB_APP_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body
+          });
+          const data = await res.json().catch(() => ({}));
+          if (!data.ok) throw new Error(data.error || 'Unknown error');
+
+          selectedSet.clear();
+          document.querySelectorAll('input.student-box').forEach(cb => cb.checked = false);
+
+          const updated = (data.updated || []).join(', ');
+          const grouped = (data.grouped || []).join(', ');
+          const missing = (data.missing || []);
+          let msg = `Saved. Updated attendance: ${updated || '—'}.`;
+          if (data.groupApplied) msg += ` Set Group=${data.groupApplied} for: ${grouped || '—'}.`;
+          if (missing.length) msg += ` Not found: ${missing.join(', ')}.`;
+          setStatus(msg);
+        } catch (err) {
+          setStatus('Error: ' + String(err.message || err), true);
+        } finally {
+          submitEl.disabled = false;
+        }
+      });
+
+      function setStatus(msg, isError = false) {
+        statusEl.textContent = msg;
+        statusEl.classList.toggle('error', isError);
+        statusEl.classList.toggle('muted', !isError);
       }
     });
-
-    function setStatus(msg, isError = false) {
-      statusEl.textContent = msg;
-      statusEl.classList.toggle('error', isError);
-      statusEl.classList.toggle('muted', !isError);
-    }
   </script>
 </body>
 </html>
