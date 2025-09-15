@@ -15,32 +15,26 @@ if (typeof WEB_APP_URL === 'undefined' || !WEB_APP_URL) {
     const dateEl      = document.getElementById('date');
     const submitEl    = document.getElementById('submit');
     const themeToggle = document.getElementById('themeToggle');
-    const byGroupBtn      = document.getElementById('byGroup');
-    const byAlphaLastBtn  = document.getElementById('byAlphaLast');
-    const byAlphaFirstBtn = document.getElementById('byAlphaFirst');
-    const groupRowEl      = document.getElementById('groupRow');
+
+    // Updated controls
+    const byGroupBtn  = document.getElementById('byGroup');
+    const byAlphaBtn  = document.getElementById('byAlpha');
+    const sortByLastBtn  = document.getElementById('sortByLast');
+    const sortByFirstBtn = document.getElementById('sortByFirst');
+
+    const groupRowEl  = document.getElementById('groupRow');
 
     /* ======== SAFE STATE ======== */
     let originalRows = [];    // [{name, group}]
     let selectedSet  = new Set();
     let lastColCount = null;
     let selectedGroup = 'none'; // Group Number picker (default each load)
-    let isLoading = true;       // controls "Loading…" visibility
+    let isLoading = true;
 
     /* ======== UTIL ======== */
     const safeParse = (json, fallback) => { try { return JSON.parse(json); } catch { return fallback; } };
     const debounce  = (fn, ms) => { let t; return (...a)=>{ clearTimeout(t); t=setTimeout(()=>fn(...a), ms); }; };
     const escapeHtml= (s) => (s == null ? '' : String(s)).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-    const toFirstLast = (name) => {
-      const s = (name || '').trim(); if (!s) return '';
-      const parts = s.split(',');
-      if (parts.length >= 2) {
-        const last = parts[0].trim();
-        const first = parts.slice(1).join(',').trim();
-        if (first) return `${first} ${last}`.replace(/\s+/g, ' ').trim();
-      }
-      return s;
-    };
     const normalizeForSort = (s) => (s||'').toLowerCase().replace(/[^a-z0-9]+/gi, ' ').trim();
     const firstAlphaNum = (s) => {
       const ch = (s || '').trim().charAt(0).toUpperCase();
@@ -65,6 +59,23 @@ if (typeof WEB_APP_URL === 'undefined' || !WEB_APP_URL) {
       } finally { clearTimeout(id); }
     };
 
+    // Robust parser: returns { first, last }
+    function parseName(name) {
+      const s = (name || '').trim();
+      if (!s) return { first: '', last: '' };
+      if (s.includes(',')) {
+        const [lastPart, ...rest] = s.split(',');
+        const last = lastPart.trim();
+        const first = rest.join(',').trim(); // preserves middle names, suffixes in "first" slot
+        return { first, last };
+      }
+      const bits = s.split(/\s+/);
+      if (bits.length === 1) return { first: bits[0], last: '' };
+      const last = bits.pop();
+      const first = bits.join(' ');
+      return { first, last };
+    }
+
     /* ======== DATE + THEME ======== */
     try { dateEl.textContent = new Date().toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }); } catch {}
     const saved = safeParse(localStorage.getItem('attendanceOptions') || '', {});
@@ -75,30 +86,52 @@ if (typeof WEB_APP_URL === 'undefined' || !WEB_APP_URL) {
       saveOptions();
     });
 
-    /* ======== GROUP BY SEGMENTED CONTROL ======== */
-    let groupByMode = saved.groupByMode || 'group'; // 'group' | 'alphaLast' | 'alphaFirst'
+    /* ======== GROUP BY + SORT BY ======== */
+    // New model:
+    // - groupByMode: 'group' | 'alpha'
+    // - sortMode:    'last'  | 'first'
+    let groupByMode = saved.groupByMode || 'group';
+    let sortMode    = saved.sortMode    || 'last';   // default = Last Name
+
     function saveOptions() {
       const opts = {
         darkMode: document.body.classList.contains('dark'),
-        groupByMode
+        groupByMode,
+        sortMode
       };
       try { localStorage.setItem('attendanceOptions', JSON.stringify(opts)); } catch {}
     }
+
     function setGroupByButtons(mode) {
       groupByMode = mode;
       byGroupBtn.classList.toggle('active', mode === 'group');
       byGroupBtn.setAttribute('aria-selected', mode === 'group');
-      byAlphaLastBtn.classList.toggle('active', mode === 'alphaLast');
-      byAlphaLastBtn.setAttribute('aria-selected', mode === 'alphaLast');
-      byAlphaFirstBtn.classList.toggle('active', mode === 'alphaFirst');
-      byAlphaFirstBtn.setAttribute('aria-selected', mode === 'alphaFirst');
+      byAlphaBtn.classList.toggle('active', mode === 'alpha');
+      byAlphaBtn.setAttribute('aria-selected', mode === 'alpha');
       saveOptions();
       render();
     }
+
+    function setSortByButtons(mode) {
+      sortMode = mode; // 'last' | 'first'
+      const lastActive  = mode === 'last';
+      const firstActive = mode === 'first';
+      sortByLastBtn.classList.toggle('active', lastActive);
+      sortByLastBtn.setAttribute('aria-selected', lastActive);
+      sortByFirstBtn.classList.toggle('active', firstActive);
+      sortByFirstBtn.setAttribute('aria-selected', firstActive);
+      saveOptions();
+      render();
+    }
+
     byGroupBtn.addEventListener('click', () => setGroupByButtons('group'));
-    byAlphaLastBtn.addEventListener('click', () => setGroupByButtons('alphaLast'));
-    byAlphaFirstBtn.addEventListener('click', () => setGroupByButtons('alphaFirst'));
-    setGroupByButtons(groupByMode); // initialize
+    byAlphaBtn.addEventListener('click', () => setGroupByButtons('alpha'));
+    sortByLastBtn.addEventListener('click',  () => setSortByButtons('last'));
+    sortByFirstBtn.addEventListener('click', () => setSortByButtons('first'));
+
+    // Initialize button states
+    setGroupByButtons(groupByMode);
+    setSortByButtons(sortMode);
 
     /* ======== GROUP NUMBER BUTTONS ======== */
     function buildGroupButtons() {
@@ -133,7 +166,7 @@ if (typeof WEB_APP_URL === 'undefined' || !WEB_APP_URL) {
         b.classList.toggle('active', b.dataset.value === selectedGroup);
       });
     }
-    buildGroupButtons(); // build immediately
+    buildGroupButtons();
 
     /* ======== LOAD DATA ======== */
     async function loadRows() {
@@ -150,16 +183,16 @@ if (typeof WEB_APP_URL === 'undefined' || !WEB_APP_URL) {
         } else {
           originalRows = [];
         }
-        isLoading = false; // data arrived
+        isLoading = false;
         render();
       } catch (err) {
-        isLoading = false; // stop loading on error, too
+        isLoading = false;
         columnsEl.innerHTML = `<div class="card muted">Error loading students: ${escapeHtml(String(err.message || err))}</div>`;
       }
     }
     loadRows();
 
-    /* ======== RESIZE (only re-render if column count changes) ======== */
+    /* ======== RESIZE ======== */
     window.addEventListener('resize', debounce(() => {
       const cc = getColumnCount();
       if (!isLoading && cc !== lastColCount) render();
@@ -182,21 +215,33 @@ if (typeof WEB_APP_URL === 'undefined' || !WEB_APP_URL) {
       const colCount = getColumnCount();
 
       const items = originalRows.map(r => {
-        const display = (groupByMode === 'alphaFirst') ? toFirstLast(r.name) : r.name;
-        const dispTrim = (display || '').trim();
+        const { first, last } = parseName(r.name);
+        // Display & sort depend on sortMode
+        const display = (sortMode === 'first')
+          ? `${first}, ${last}`.replace(/,\s*$/, '').trim()
+          : `${last}, ${first}`.replace(/,\s*$/, '').trim();
+
+        const sortKey = (sortMode === 'first')
+          ? normalizeForSort(`${first} ${last}`)
+          : normalizeForSort(`${last} ${first}`);
+
+        const letterKey = firstAlphaNum(display);
+
         const raw = (r.group || '').trim();
         const numMatch = raw.match(/^\d+$/);
         const groupNorm = raw === '' ? '' : (numMatch ? String(parseInt(raw, 10)) : raw);
+
         return {
           orig: r.name,
-          display: dispTrim,
-          sortKey: normalizeForSort(dispTrim),
-          letterKey: firstAlphaNum(dispTrim),
-          groupNorm // '' => unknown
+          first, last,
+          display,
+          sortKey,
+          letterKey,
+          groupNorm
         };
       });
 
-      // Sort by display name for stable ordering within groups
+      // Stable ordering by the selected sort key
       items.sort((a, b) => a.sortKey.localeCompare(b.sortKey));
 
       if (!items.length) {

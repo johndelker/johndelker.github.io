@@ -21,8 +21,16 @@
       <span class="label">Group by</span>
       <div class="seg" role="tablist" aria-label="Group by">
         <button id="byGroup" class="active" role="tab" aria-selected="true">Group Number</button>
-        <button id="byAlphaLast" role="tab" aria-selected="false">Alphabetical (Last Name)</button>
-        <button id="byAlphaFirst" role="tab" aria-selected="false">Alphabetical (First Name)</button>
+        <button id="byAlpha" role="tab" aria-selected="false">Alphabetical</button>
+      </div>
+    </div>
+
+    <!-- NEW: Sort by segmented control -->
+    <div class="control-row">
+      <span class="label">Sort by</span>
+      <div class="seg" role="tablist" aria-label="Sort by">
+        <button id="sortByLast"  class="active" role="tab" aria-selected="true">Last Name</button>
+        <button id="sortByFirst" role="tab" aria-selected="false">First Name</button>
       </div>
     </div>
 
@@ -49,7 +57,6 @@
     <div class="spacer"></div>
   </main>
 
-  <!-- Load config first, then app. `defer` preserves order. -->
   <script src="./config.js" defer></script>
   <script src="./app.js" defer></script>
 </body>
