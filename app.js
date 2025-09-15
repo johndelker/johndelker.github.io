@@ -231,7 +231,7 @@ if (typeof WEB_APP_URL === 'undefined' || !WEB_APP_URL) {
         const { first, last } = parseName(r.name);
         // Display & sort depend on sortMode
         const display = (sortMode === 'first')
-          ? `${first}, ${last}`.replace(/,\s*$/, '').trim()
+          ? `${first} ${last}`.replace(/,\s*$/, '').trim()
           : `${last}, ${first}`.replace(/,\s*$/, '').trim();
 
         const sortKey = (sortMode === 'first')
