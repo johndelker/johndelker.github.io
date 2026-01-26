@@ -48,8 +48,8 @@
     nav a:hover { opacity:1; }
     .controls { display:flex; align-items:center; gap:12px; }
 
-    .social a svg { width:22px; height:22px; fill: var(--text); transition: transform 0.2s, fill 0.2s, background 0.2s; border-radius:6px; background:var(--text); color:#fff; padding:2px; }
-    .social a:hover svg { transform: scale(1.2); fill: var(--accent); background:var(--accent); color:#fff; }
+    .social a img { width:22px; height:22px; transition: transform 0.2s, opacity 0.2s; border-radius:6px; padding:2px; object-fit: contain; }
+    .social a:hover img { transform: scale(1.2); opacity: 0.8; }
 
     .hero { display:grid; grid-template-columns:.8fr 1.2fr; gap:28px; align-items:center; padding:40px 0; }
     .hero h1 { margin:0; font-size:clamp(28px,6vw,44px); line-height:1.2; }
@@ -83,16 +83,16 @@
       </nav>
       <div class="controls social">
         <a href="mailto:jdelker@msu.edu" title="Email" aria-label="Email">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><rect width="24" height="24" rx="6" fill="currentColor"/><path d="M4 6h16v12H4V6zm1.6 1.2l6.4 4.8 6.4-4.8H5.6z" fill="#fff"/></svg>
+          <img src="images/email.png" alt="Email" />
         </a>
         <a href="https://orcid.org/0009-0008-5172-5307" title="ORCID" aria-label="ORCID">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><rect width="24" height="24" rx="6" fill="#A6CE39"/><text x="6" y="16" font-size="10" font-weight="700" fill="#fff">iD</text></svg>
+          <img src="images/orcid.jpg" alt="ORCID" />
         </a>
         <a href="https://github.com/johndelker" title="GitHub" aria-label="GitHub">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><rect width="24" height="24" rx="6" fill="currentColor"/><path d="M12 .5C5.65.5.5 5.65.5 12c0 5.1 3.29 9.42 7.86 10.95.58.1.79-.25.79-.56v-2c-3.2.7-3.87-1.38-3.87-1.38-.5-1.27-1.22-1.61-1.22-1.61-1-.68.08-.67.08-.67 1.11.08 1.7 1.14 1.7 1.14.99 1.68 2.6 1.19 3.23.91.1-.72.39-1.21.71-1.49-2.55-.29-5.23-1.27-5.23-5.67 0-1.25.45-2.27 1.2-3.07-.13-.3-.52-1.46.11-3.03 0 0 .97-.31 3.17 1.2.92-.26 1.9-.39 2.88-.39s1.96.13 2.88.39c2.2-1.51 3.17-1.2 3.17-1.2.63 1.57.25 2.73.12 3.03.75.8 1.2 1.82 1.2 3.07 0 4.42-2.68 5.37-5.23 5.66.4.35.76 1.02.76 2.06v2.56c0 .31.21.67.79.56C20.21 21.42 23.5 17.1 23.5 12c0-6.35-5.15-11.5-11.5-11.5z" fill="#fff"/></svg>
+          <img src="images/github.png" alt="GitHub" />
         </a>
         <a href="https://www.linkedin.com/in/johndelker" title="LinkedIn" aria-label="LinkedIn">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><rect width="24" height="24" rx="6" fill="#0A66C2"/><path d="M6.94 7.5c0 .83-.68 1.5-1.5 1.5S3.94 8.33 3.94 7.5s.68-1.5 1.5-1.5 1.5.67 1.5 1.5zM4.44 9.75H7.4V20H4.44V9.75zm4.72 0h2.83v1.4h.04c.39-.74 1.35-1.52 2.77-1.52 2.96 0 3.5 1.95 3.5 4.49V20h-2.96v-4.6c0-1.1-.02-2.52-1.54-2.52-1.55 0-1.79 1.21-1.79 2.45V20h-2.96V9.75z" fill="#fff"/></svg>
+          <img src="images/linkedin.png" alt="LinkedIn" />
         </a>
       </div>
     </div>
