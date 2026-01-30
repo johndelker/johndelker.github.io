@@ -93,9 +93,9 @@ if (typeof WEB_APP_URL === 'undefined' || !WEB_APP_URL) {
     const validGroup = new Set(['group', 'alpha', 'alphaLast', 'alphaFirst']);
     const validSort  = new Set(['last', 'first']);
 
-    let groupByModeRaw = saved.groupByMode || 'group';
-    if (!validGroup.has(groupByModeRaw)) groupByModeRaw = 'group';
-    // Map legacy values to new:
+    // Group selection hidden for now — always use alphabetical
+    let groupByModeRaw = saved.groupByMode || 'alpha';
+    if (!validGroup.has(groupByModeRaw)) groupByModeRaw = 'alpha';
     let groupByMode = (groupByModeRaw === 'alpha' || groupByModeRaw.startsWith('alpha')) ? 'alpha' : 'group';
 
     let sortMode = saved.sortMode || 'last';
