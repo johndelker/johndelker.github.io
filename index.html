@@ -44,8 +44,24 @@
     header { position:sticky; top:0; backdrop-filter: saturate(140%) blur(8px); background: color-mix(in srgb, var(--bg) 90%, transparent); border-bottom:1px solid var(--border); z-index:10; }
     .nav { display:flex; align-items:center; justify-content:space-between; gap:16px; }
     nav ul { list-style:none; display:flex; gap:18px; margin:0; padding:0; }
-    nav a { font-weight:600; color: var(--text); opacity:.85; }
-    nav a:hover { opacity:1; }
+    nav a {
+      display: inline-block;
+      padding: 10px 18px;
+      background: var(--accent);
+      color: white;
+      border-radius: 8px;
+      font-weight: 700;
+      font-size: 1.1rem;
+      opacity: 1;
+      box-shadow: var(--shadow);
+      transition: transform 0.2s, filter 0.2s;
+    }
+
+    nav a:hover {
+      text-decoration: none;
+      transform: translateY(-2px);
+      filter: brightness(1.08);
+    }
     .controls { display:flex; align-items:center; gap:12px; }
 
     .social a img { width:44px; height:44px; transition: transform 0.2s, opacity 0.2s; border-radius:6px; padding:2px; object-fit: contain; }
@@ -55,8 +71,19 @@
     .hero h1 { margin:0; font-size:clamp(28px,6vw,44px); line-height:1.2; }
     .hero p.sub { color:var(--muted); }
     .tag { display:inline-block; padding:6px 10px; background:var(--accent-weak); border-radius:999px; font-weight:600; font-size:0.9rem; }
-    .portrait { aspect-ratio:1/1; border-radius:var(--radius); background:linear-gradient(135deg,var(--accent-weak),transparent 70%); border:1px solid var(--border); box-shadow:var(--shadow); display:grid; place-items:center; font-size:42px; }
-
+    .portrait {
+      display:flex;
+      justify-content:center;
+      align-items:flex-start;
+    }
+    .portrait img {
+      width: 240px;
+      max-width: 100%;
+      height: auto;
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow);
+    }
     section { padding:32px 0; }
     section h2 { font-size:clamp(22px,3.5vw,28px); margin:0 0 16px; }
     .card { background:var(--card); border:1px solid var(--border); border-radius:var(--radius); padding:18px; box-shadow:var(--shadow); }
@@ -99,7 +126,9 @@
   </header>
   <main class="wrap">
     <section class="hero">
-      <div class="portrait"><img src="images/me.png" alt="LinkedIn" /></div>
+      <div class="portrait">
+        <img src="images/me.png" alt="John Delker" />
+      </div>
       <div>
         <h1>John Delker</h1>
         <p class="sub">Astrophysics Graduate Student</p>
