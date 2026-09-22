@@ -1,5 +1,5 @@
 /*** CONFIG ***/
-const SHEET_ID   = '1I-iWwijASFbxyo3joi07goxnWtACzl_r2DUC3-poc4A';   // e.g. 1AbC... from the sheet URL
+const SHEET_ID   = '1gtwi55a8fx2x36u7tZfJXPbIoKVgUqJQz5C1ylrwnSM';   // e.g. 1AbC... from the sheet URL
 const SHEET_NAME = 'CMSE 201-8 Attendance';                           // change if your tab is named differently
 const DATE_FMT   = 'yyyy-MM-dd';
 
