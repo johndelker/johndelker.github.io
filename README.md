@@ -10,11 +10,11 @@ The website consists of two main components:
 
 A single-page personal website designed for networking and job-finding purposes. It features:
 
-- **Hero Section**: Introduction with portrait placeholder and brief bio
+- **Home View**: Portrait and brief introduction
 - **Research Section**: Current projects and research interests
 - **Software & Tools Section**: Experience with simulation codes and computational skills
 - **Teaching & Outreach Section**: Teaching and public outreach activities
-- **Navigation**: Smooth scroll navigation to different sections
+- **Navigation**: Buttons switch between Home, Research, Software, Teaching & Outreach, and Other views
 - **Social Links**: Email, ORCID, GitHub, and LinkedIn integration
 - **Responsive Design**: Mobile-friendly layout with CSS Grid
 - **Dark Mode Support**: Automatic dark mode based on system preferences using CSS custom properties
@@ -22,7 +22,8 @@ A single-page personal website designed for networking and job-finding purposes.
 **Technical Details:**
 - Pure HTML/CSS/JavaScript (no frameworks)
 - Inline styles for portability
-- Minimal JavaScript (only for dynamic copyright year)
+- `content.json` stores page copy, image paths, and content links
+- `site.js` renders the JSON content and switches views; it also updates the copyright year
 - Semantic HTML with accessibility considerations
 - Meta tags for SEO and social sharing
 
@@ -55,7 +56,13 @@ A web-based attendance tracking application for managing student attendance in c
 ## File Descriptions
 
 ### `index.html`
-The main academic website. Contains all HTML, CSS (inline), and minimal JavaScript for the personal site.
+The main academic website structure, navigation/contact controls, and inline CSS.
+
+### `content.json`
+Editable page content for the main website, including document metadata and favicon, the Home introduction and portrait path, view headings, card headings, paragraphs, lists, inline links, and footer name. Text and links use structured JSON values rather than HTML markup.
+
+### `site.js`
+Loads `content.json`, renders its content, and switches between the navigation views.
 
 ### `attendance.html`
 The attendance tool interface. Loads external JavaScript and CSS files for functionality.
@@ -95,7 +102,9 @@ Stylesheet for the attendance tool. Features:
 ## Usage
 
 ### Main Website
-Simply open `index.html` in a web browser or deploy to GitHub Pages. The site is self-contained and requires no build process.
+Edit the copy and image paths in `content.json`. Each view has a title and blocks. Blocks can be paragraphs, lists, or cards; cards have a heading and nested paragraph/list blocks. Inline links use objects with `text` and `href` fields. Navigation and contact controls stay in `index.html`. The document and Open Graph metadata also have static fallback values in `index.html` for crawlers that do not run JavaScript; keep those fallbacks in sync if you change the corresponding `meta` values.
+
+Because the page loads JSON with `fetch`, preview it through a local HTTP server instead of opening the HTML file directly. From this directory, run `python3 -m http.server`, then open `http://localhost:8000`. GitHub Pages serves the files over HTTP automatically. No build process is required.
 
 ### Attendance Tool
 1. Ensure `config.js` contains the correct Google Apps Script Web App URL

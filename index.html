@@ -1,18 +1,12 @@
 <!DOCTYPE html>
-
-<!-- 
-  TODO LIST:
-    * Get rid of attendance tracker or make it inaccessible somehow.
-    * Host the gravity simulator on the website.
--->
-
 <html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <!-- Static metadata fallbacks are mirrored in content.json for crawlers without JavaScript. -->
   <title>John Delker</title>
   <meta name="description" content="Personal academic website for John Delker, astrophysics and CMSE graduate student at Michigan State University." />
-  <meta property="og:title" content="John Delker — Astrophysics & CMSE" />
+  <meta property="og:title" content="John Delker — Astrophysics &amp; CMSE" />
   <meta property="og:description" content="Research • Publications • Software • Teaching" />
   <meta property="og:type" content="website" />
   <meta name="color-scheme" content="light dark" />
@@ -50,25 +44,25 @@
 
     header { position:sticky; top:0; backdrop-filter: saturate(140%) blur(8px); background: color-mix(in srgb, var(--bg) 90%, transparent); border-bottom:1px solid var(--border); z-index:10; }
     .nav { display:flex; align-items:center; justify-content:space-between; gap:16px; }
-    nav ul { list-style:none; display:flex; gap:18px; margin:0; padding:0; }
-    nav a {
+    nav ul { list-style:none; display:flex; gap:12px; flex-wrap:wrap; margin:0; padding:0; }
+    nav button {
       display: inline-block;
       padding: 10px 18px;
+      border: 1px solid transparent;
       background: var(--accent);
       color: white;
       border-radius: 8px;
+      font: inherit;
       font-weight: 700;
       font-size: 1.1rem;
       opacity: 1;
       box-shadow: var(--shadow);
-      transition: transform 0.2s, filter 0.2s;
+      cursor: pointer;
+      transition: transform 0.2s, filter 0.2s, background-color 0.2s;
     }
-
-    nav a:hover {
-      text-decoration: none;
-      transform: translateY(-2px);
-      filter: brightness(1.08);
-    }
+    nav button:hover { transform: translateY(-2px); filter: brightness(1.08); }
+    nav button:focus-visible { outline: 3px solid var(--text); outline-offset: 3px; }
+    nav button[aria-pressed="true"] { background: var(--text); color: var(--bg); }
     .controls { display:flex; align-items:center; gap:12px; }
 
     .social a img { width:44px; height:44px; transition: transform 0.2s, opacity 0.2s; border-radius:6px; padding:2px; object-fit: contain; }
@@ -77,43 +71,42 @@
     .hero { display:grid; grid-template-columns:.8fr 1.2fr; gap:28px; align-items:center; padding:40px 0; }
     .hero h1 { margin:0; font-size:clamp(28px,6vw,44px); line-height:1.2; }
     .hero p.sub { color:var(--muted); }
-    .tag { display:inline-block; padding:6px 10px; background:var(--accent-weak); border-radius:999px; font-weight:600; font-size:0.9rem; }
-    .portrait {
-      display:flex;
-      justify-content:center;
-      align-items:flex-start;
-    }
-    .portrait img {
-      width: 360px;
-      max-width: 100%;
-      height: auto;
-      border-radius: var(--radius);
-      border: 1px solid var(--border);
-      box-shadow: var(--shadow);
-    }
+    .portrait { display:flex; justify-content:center; align-items:flex-start; }
+    .portrait img { width:360px; max-width:100%; height:auto; border-radius:var(--radius); border:1px solid var(--border); box-shadow:var(--shadow); }
+    .muted { color:var(--muted); }
     section { padding:32px 0; }
+    section[hidden] { display:none; }
     section h2 { font-size:clamp(22px,3.5vw,28px); margin:0 0 16px; }
     .card { background:var(--card); border:1px solid var(--border); border-radius:var(--radius); padding:18px; box-shadow:var(--shadow); }
     .grid { display:grid; gap:18px; }
     .g-2 { grid-template-columns:repeat(2,minmax(0,1fr)); }
+    #content-error { padding:32px 0; color:var(--muted); }
 
     footer { border-top:1px solid var(--border); color:var(--muted); padding:24px 0; }
 
     @media (max-width:860px){
       .hero { grid-template-columns: 1fr; }
-      nav ul { gap:12px; flex-wrap:wrap; }
+      .nav { align-items:flex-start; flex-wrap:wrap; }
+    }
+    @media (max-width:600px){
+      .wrap { padding:18px; }
+      nav ul { gap:8px; }
+      nav button { padding:8px 12px; font-size:1rem; }
+      .g-2 { grid-template-columns:1fr; }
     }
   </style>
+  <script src="site.js" defer></script>
 </head>
 <body>
   <header>
-    <div class="wrap nav" role="navigation" aria-label="Primary">
-      <nav>
+    <div class="wrap nav">
+      <nav aria-label="Primary">
         <ul id="menu">
-          <li><a href="#research">Research</a></li>
-          <li><a href="#software">Software</a></li>
-          <li><a href="#teaching">Teaching & Outreach</a></li>
-          <li><a href="#other">Other</a></li>
+          <li><button type="button" data-view="home" aria-pressed="true">Home</button></li>
+          <li><button type="button" data-view="research" aria-pressed="false">Research</button></li>
+          <li><button type="button" data-view="software" aria-pressed="false">Software</button></li>
+          <li><button type="button" data-view="teaching" aria-pressed="false">Teaching &amp; Outreach</button></li>
+          <li><button type="button" data-view="other" aria-pressed="false">Other</button></li>
         </ul>
       </nav>
       <div class="controls social">
@@ -132,84 +125,21 @@
       </div>
     </div>
   </header>
-  <main class="wrap">
-    <section class="hero">
-      <div class="portrait">
-        <img src="images/me.png" alt="John Delker" />
-      </div>
-      <div>
-        <h1>John Delker</h1>
-        <p class="sub">Astrophysics Graduate Student</p>
-        <p>I am a 3rd year PhD student at Michigan State University, pursuing a dual degree in Astrophysics and CMSE (Computational Math, Science & Engineering). 
+  <main class="wrap" id="main-content">
+    <div id="content-error" role="alert" hidden></div>
+    <section id="view-home" data-view-panel="home" aria-labelledby="home-title">
+      <div class="hero">
+        <div class="portrait" id="home-portrait"></div>
+        <div id="home-copy"></div>
       </div>
     </section>
-
-    <section id="research">
-      <h2>Astrophysics Research</h2>
-      <p>My research has mostly centered on the topic of supernovae, but each project has involved different aspects or methods.</p>
-      <div class="grid g-2">
-        <div class="card">
-          <h3>1D Simulation Studies</h3>
-          <p>Three-dimensional simulations are accurate, but they're also very time consuming to run. So, in my current research with Prof. Sean Couch<a href="https://web.pa.msu.edu/people/couch/">Prof. Sean Couch</a>, I use the results of one‑dimensional simulations of core‑collapse supernovae to conduct population, parameter, and sensitivity studies. </p>
-          <p>In particular, I am currently post-processing STIR models using SkyNet to analyze the nucleosynthesis across a broad range of progenitor masses. Additionally, by varying the reaction rates, we can find which rates have the most impact on ejecta composition. This will directly help researchers at FRIB (Facility for Rare Isotope Beams) in determining target priorities.</p>
-        </div>
-        <div class="card">
-          <h3>Thesis Project: OSNAP</h3>
-          <p>Currently, many codes exist to simulate various aspects of core-collapse supernova physics, but no one code covers all bases. So, while conducting other research projects, I have been working to create a one-dimensional supernovae simulation and analysis pipeline called OSNAP. It will give users full control over the parameters of their progenitor with MESA, ensure self-consistent explosion physics with STIR, and result in many observables, including neutrino fluxes, ejecta composition, explosion energy, light curves (using SNEC and STELLA) and spectra (using TARDIS).</p>
-        </div>
-        <div class="card">
-          <h3>Past Research</h3>
-          <p>As an undergraduate, I was very fortunate to work with many incredible professors and graduate students at the University of Washington. These projects include:</p>
-          <ul>
-            <li>With Jessica Birky and James Davenport: Classifying eclipsing binaries from TESS observations and researching which machine learning algorithms would be most optimal for training an automated classifier.</li>
-            <li>With <a href="https://www.werksquad.com/">Prof. Jessica Werk</a> (on the Werk SQuAD): Analyzing chemical abundances in the circumgalactic medium by processing observations of galaxies along our line of sight to quasars and identifying absorption features in their spectra.</li>
-            <li>With Prof. Andy Connolly: Using simulated light curves to analyze the accuracy and performance of ParSNIP, a machine learning tool for classifying supernovae, under varying observation conditions and constraints.</li>
-          </ul>
-        </div>
-        <div class="card">
-          <h3>Research Interests</h3>
-          <p>While my research has mostly been about supernovae, my true passion is for simulations of any kind. I'm also very interested in n-body simulations, time-domain astronomy, gravitational lensing, galaxy evolution, large‑scale structure, cosmology, and more.</p>
-        </div>
-      </div>
-    </section>
-
-    <section id="software">
-      <h2>Software & Tools</h2>
-      <div class="grid g-2">
-        <div class="card">
-          <h3>Simulation Codes</h3>
-          <p>Experienced with FLASH, STIR, MESA, and TARDIS for stellar evolution, hydrodynamics, and spectral synthesis.</p>
-        </div>
-        <div class="card">
-          <h3>Computational Skills</h3>
-          <p>Proficient in high‑performance computing, data analysis, and numerical modeling in astrophysics.</p>
-        </div>
-      </div>
-    </section>
-
-    <section id="teaching">
-      <h2>Teaching & Outreach</h2>
-      <div class="card">
-        <p>I am actively involved in public outreach at Michigan State University, volunteering at MSU public observing nights to share astronomy with the community. I also contribute to teaching as a graduate assistant in the Department of Physics & Astronomy.</p>
-      </div>
-    </section>
-
-    <section id="other">
-      <h2>Other</h2>
-      <div class="card">
-        <p>I am actively involved in public outreach at Michigan State University, volunteering at MSU public observing nights to share astronomy with the community. I also contribute to teaching as a graduate assistant in the Department of Physics & Astronomy.</p>
-      </div>
-    </section>
-
+    <section id="view-research" data-view-panel="research" aria-labelledby="research-title" hidden></section>
+    <section id="view-software" data-view-panel="software" aria-labelledby="software-title" hidden></section>
+    <section id="view-teaching" data-view-panel="teaching" aria-labelledby="teaching-title" hidden></section>
+    <section id="view-other" data-view-panel="other" aria-labelledby="other-title" hidden></section>
   </main>
   <footer>
-    <div class="wrap">© <span id="y"></span> John Delker</div>
+    <div class="wrap">© <span id="y"></span> <span id="footer-name"></span></div>
   </footer>
-  <script>
-    (function(){
-      const y=document.getElementById('y');
-      if(y) y.textContent=new Date().getFullYear();
-    })();
-  </script>
 </body>
 </html>

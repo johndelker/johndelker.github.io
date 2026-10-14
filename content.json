@@ -1,0 +1,145 @@
+{
+  "meta": {
+    "title": "John Delker",
+    "description": "Personal academic website for John Delker, astrophysics and CMSE graduate student at Michigan State University.",
+    "openGraphTitle": "John Delker — Astrophysics & CMSE",
+    "openGraphDescription": "Research • Publications • Software • Teaching",
+    "icon": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='0.9em' font-size='90'>✨</text></svg>"
+  },
+  "home": {
+    "title": "John Delker",
+    "subtitle": "Astrophysics Graduate Student",
+    "introduction": "I am a 3rd year PhD student at Michigan State University, pursuing a dual degree in Astrophysics and CMSE (Computational Math, Science & Engineering).",
+    "image": "images/me.png",
+    "imageAlt": "John Delker"
+  },
+  "views": [
+    {
+      "id": "research",
+      "title": "Astrophysics Research",
+      "blocks": [
+        {
+          "type": "paragraph",
+          "content": "My research has mostly centered on the topic of supernovae, but each project has involved different aspects or methods."
+        },
+        {
+          "type": "card",
+          "heading": "1D Simulation Studies",
+          "blocks": [
+            {
+              "type": "paragraph",
+              "content": [
+                "Three-dimensional simulations are accurate, but they're also very time consuming to run. So, in my current research with Prof. Sean Couch",
+                { "text": "Prof. Sean Couch", "href": "https://web.pa.msu.edu/people/couch/" },
+                ", I use the results of one‑dimensional simulations of core‑collapse supernovae to conduct population, parameter, and sensitivity studies."
+              ]
+            },
+            {
+              "type": "paragraph",
+              "content": "In particular, I am currently post-processing STIR models using SkyNet to analyze the nucleosynthesis across a broad range of progenitor masses. Additionally, by varying the reaction rates, we can find which rates have the most impact on ejecta composition. This will directly help researchers at FRIB (Facility for Rare Isotope Beams) in determining target priorities."
+            }
+          ]
+        },
+        {
+          "type": "card",
+          "heading": "Thesis Project: OSNAP",
+          "blocks": [
+            {
+              "type": "paragraph",
+              "content": "Currently, many codes exist to simulate various aspects of core-collapse supernova physics, but no one code covers all bases. So, while conducting other research projects, I have been working to create a one-dimensional supernovae simulation and analysis pipeline called OSNAP. It will give users full control over the parameters of their progenitor with MESA, ensure self-consistent explosion physics with STIR, and result in many observables, including neutrino fluxes, ejecta composition, explosion energy, light curves (using SNEC and STELLA) and spectra (using TARDIS)."
+            }
+          ]
+        },
+        {
+          "type": "card",
+          "heading": "Past Research",
+          "blocks": [
+            {
+              "type": "paragraph",
+              "content": "As an undergraduate, I was very fortunate to work with many incredible professors and graduate students at the University of Washington. These projects include:"
+            },
+            {
+              "type": "list",
+              "items": [
+                "With Jessica Birky and James Davenport: Classifying eclipsing binaries from TESS observations and researching which machine learning algorithms would be most optimal for training an automated classifier.",
+                [
+                  "With ",
+                  { "text": "Prof. Jessica Werk", "href": "https://www.werksquad.com/" },
+                  " (on the Werk SQuAD): Analyzing chemical abundances in the circumgalactic medium by processing observations of galaxies along our line of sight to quasars and identifying absorption features in their spectra."
+                ],
+                "With Prof. Andy Connolly: Using simulated light curves to analyze the accuracy and performance of ParSNIP, a machine learning tool for classifying supernovae, under varying observation conditions and constraints."
+              ]
+            }
+          ]
+        },
+        {
+          "type": "card",
+          "heading": "Research Interests",
+          "blocks": [
+            {
+              "type": "paragraph",
+              "content": "While my research has mostly been about supernovae, my true passion is for simulations of any kind. I'm also very interested in n-body simulations, time-domain astronomy, gravitational lensing, galaxy evolution, large‑scale structure, cosmology, and more."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "software",
+      "title": "Software & Tools",
+      "blocks": [
+        {
+          "type": "card",
+          "heading": "Simulation Codes",
+          "blocks": [
+            {
+              "type": "paragraph",
+              "content": "Experienced with FLASH, STIR, MESA, and TARDIS for stellar evolution, hydrodynamics, and spectral synthesis."
+            }
+          ]
+        },
+        {
+          "type": "card",
+          "heading": "Computational Skills",
+          "blocks": [
+            {
+              "type": "paragraph",
+              "content": "Proficient in high‑performance computing, data analysis, and numerical modeling in astrophysics."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "teaching",
+      "title": "Teaching & Outreach",
+      "blocks": [
+        {
+          "type": "card",
+          "blocks": [
+            {
+              "type": "paragraph",
+              "content": "I am actively involved in public outreach at Michigan State University, volunteering at MSU public observing nights to share astronomy with the community. I also contribute to teaching as a graduate assistant in the Department of Physics & Astronomy."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "other",
+      "title": "Other",
+      "blocks": [
+        {
+          "type": "card",
+          "blocks": [
+            {
+              "type": "paragraph",
+              "content": "I am actively involved in public outreach at Michigan State University, volunteering at MSU public observing nights to share astronomy with the community. I also contribute to teaching as a graduate assistant in the Department of Physics & Astronomy."
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "footerName": "John Delker"
+}
